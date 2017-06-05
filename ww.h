@@ -20,6 +20,13 @@ typedef struct{
 	int ww_received_quit_event;
 } ww_window_s;
 
+typedef struct {
+	unsigned char color[3];
+	short *x;
+	short *y;
+	int points;
+} ww_polygon_t;
+
 extern ww_window_t window;
 extern ww_pixel_buffer_t buffer;
 
@@ -157,11 +164,103 @@ void ww_hline( int32_t x1, int32_t x2, int32_t y, void * value){
 		x1 = 0;
 	if( x2 > window_p->ww_width )
 		x2 = window_p->ww_width - 1;
-	if( y  > window_p->ww_height || y < 0 || x2 <= x1 ){
-		printf("nope\n");
+	if( y  > window_p->ww_height || y < 0 ||x2 <= x1 ){
 		return;
 	}
 	
 	ww_memset_pixel_range( x1, y, value, ( x2 - x1 ) );
 	
+}
+
+int _gfxPrimitivesCompareInt(const void *a, const void *b)
+{
+	return (*(const int *) a) - (*(const int *) b);
+}
+
+int ww_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, void * color)
+{
+	int result;
+	int i;
+	int y, xa, xb;
+	int miny, maxy;
+	int x1, y1;
+	int x2, y2;
+	int ind1, ind2;
+	int ints;
+	int *gfxPrimitivesPolyInts = (int *) malloc(sizeof(int) * n);
+	
+	if (vx == NULL || vy == NULL || n < 3) {
+		return -1;
+	}
+	
+	miny = vy[0];
+	maxy = vy[0];
+	for (i = 1; (i < n); i++) {
+		if (vy[i] < miny) {
+			miny = vy[i];
+		} else if (vy[i] > maxy) {
+			maxy = vy[i];
+		}
+	}
+	
+	result = 0;
+	for (y = miny; (y <= maxy); y++) {
+		ints = 0;
+		for (i = 0; (i < n); i++) {
+			if (!i) {
+				ind1 = n - 1;
+				ind2 = 0;
+			} else {
+				ind1 = i - 1;
+				ind2 = i;
+			}
+			y1 = vy[ind1];
+			y2 = vy[ind2];
+			if (y1 < y2) {
+				x1 = vx[ind1];
+				x2 = vx[ind2];
+			} else if (y1 > y2) {
+				y2 = vy[ind1];
+				y1 = vy[ind2];
+				x2 = vx[ind1];
+				x1 = vx[ind2];
+			} else {
+				continue;
+			}
+			if ( ((y >= y1) && (y < y2)) || ((y == maxy) && (y > y1) && (y <= y2)) ) {
+				gfxPrimitivesPolyInts[ints++] = ((65536 * (y - y1)) / (y2 - y1)) * (x2 - x1) + (65536 * x1);
+			} 	    
+		}
+
+		qsort(gfxPrimitivesPolyInts, ints, sizeof(int), _gfxPrimitivesCompareInt);
+		
+		result = 0;
+
+		for (i = 0; (i < ints); i += 2) {
+			xa = gfxPrimitivesPolyInts[i] + 1;
+			xa = (xa >> 16) + ((xa & 32768) >> 15);
+			xb = gfxPrimitivesPolyInts[i+1] - 1;
+			xb = (xb >> 16) + ((xb & 32768) >> 15);
+			ww_hline( xa, xb, y, color);
+		}
+	}
+
+	return (result);
+}
+
+int ww_polygon(ww_polygon_t * poly){
+	return ww_raw_polygon(poly->x, poly->y, poly->points, poly->color);
+}
+
+ww_polygon_t * ww_new_polygon(unsigned char color[3], short * x, short * y, int points){
+	
+	ww_polygon_t * poly = calloc(1, sizeof(ww_polygon_t));
+	poly->x = calloc(points, sizeof(short));
+	poly->y = calloc(points, sizeof(short));
+	memcpy(poly->x, x, points*sizeof(short));
+	memcpy(poly->y, y, points*sizeof(short));
+	memcpy(poly->color, color, 3);
+	poly->points = points;
+	
+	return poly;
 }
