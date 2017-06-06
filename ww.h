@@ -5,6 +5,9 @@
 
 #include <SDL2/SDL.h>
 
+#ifndef _WW_H_
+#define _WW_H_
+
 typedef void* ww_window_t;
 typedef unsigned char* ww_pixel_buffer_t;
 typedef unsigned char ww_rgba_t[3];
@@ -275,3 +278,5 @@ void ww_free_polygon(ww_polygon_t * poly){
 	free(poly->y);
 	free(poly);
 }
+
+#endif

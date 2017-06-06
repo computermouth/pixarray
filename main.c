@@ -2,10 +2,7 @@
 #include <stdio.h>
 
 #include "ww.h"
-
-ww_rgba_t pink = { 0xa5, 0x54, 0x90 };
-short pentagon_x[5] = { 290, 380, 500, 480, 310};
-short pentagon_y[5] = { 270, 160, 270, 410, 420};
+#include "test_shapes.h"
 
 int main( void ) {
 	
@@ -14,7 +11,8 @@ int main( void ) {
 		return 1;
 	}
 	
-	ww_polygon_t * pink_pentagon = ww_new_polygon(pink, pentagon_x, pentagon_y, 5);
+	test_shapes_init();
+	
 	ww_draw_polygon(pink_pentagon);
 	
 	while(!ww_window_received_quit_event()) {
