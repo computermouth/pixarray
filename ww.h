@@ -91,6 +91,8 @@ int ww_window_destroy() {
 	if(window_p->ww_sdl_window) SDL_DestroyWindow( window_p->ww_sdl_window );
 	free(window);
 	free(buffer);
+	
+	SDL_Quit();
 
 	return 0;
 }
@@ -131,12 +133,13 @@ int ww_window_update_buffer() {
 	ww_window_s *window_p = (ww_window_s*) window;
 
 	void *texture_pixels = NULL;
-	int ww_pitch = 0;
-	if(SDL_LockTexture( window_p->ww_sdl_texture, NULL, &texture_pixels, &ww_pitch )) {
-		fprintf( stderr, "Could not unlock texture: %s\n", SDL_GetError() );
+	window_p->ww_pitch = 0;
+	if(SDL_LockTexture( window_p->ww_sdl_texture, NULL, &texture_pixels, &window_p->ww_pitch )) {
+		fprintf( stderr, "Could not lock texture: %s\n", SDL_GetError() );
 		return -1;
 	}
-	memcpy( texture_pixels, buffer, ww_pitch*window_p->ww_width );
+	
+	memcpy( texture_pixels, buffer, window_p->ww_pitch*window_p->ww_height );
     SDL_UnlockTexture( window_p->ww_sdl_texture );
 
     SDL_RenderClear( window_p->ww_sdl_renderer );
@@ -146,18 +149,18 @@ int ww_window_update_buffer() {
 	return 0;
 }
 
-void ww_memset_pixel( uint32_t x, uint32_t y, void * value ){
+void ww_draw_pixel( uint32_t x, uint32_t y, void * value ){
 	ww_window_s *window_p = (ww_window_s*) window;
 	
 	memcpy(buffer + (((window_p->ww_width * y) + x ) * 4), value, 3);
 }
 
-void ww_memset_pixel_range( uint32_t x, uint32_t y, void * value, size_t size){
+void ww_draw_pixel_range( uint32_t x, uint32_t y, void * value, size_t size){
 	for (uint32_t i = 0; i < size; i++)
-		ww_memset_pixel( x + i, y, value);
+		ww_draw_pixel( x + i, y, value);
 }
 
-void ww_hline( int32_t x1, int32_t x2, int32_t y, void * value){
+void ww_draw_hline( int32_t x1, int32_t x2, int32_t y, void * value){
 	ww_window_s *window_p = (ww_window_s*) window;
 	
 	if( x1 < 0 )
@@ -168,7 +171,7 @@ void ww_hline( int32_t x1, int32_t x2, int32_t y, void * value){
 		return;
 	}
 	
-	ww_memset_pixel_range( x1, y, value, ( x2 - x1 ) );
+	ww_draw_pixel_range( x1, y, value, ( x2 - x1 ) );
 	
 }
 
@@ -177,7 +180,7 @@ int _gfxPrimitivesCompareInt(const void *a, const void *b)
 	return (*(const int *) a) - (*(const int *) b);
 }
 
-int ww_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, void * color)
+int ww_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, void * color)
 {
 	int result;
 	int i;
@@ -241,15 +244,17 @@ int ww_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, void * color)
 			xa = (xa >> 16) + ((xa & 32768) >> 15);
 			xb = gfxPrimitivesPolyInts[i+1] - 1;
 			xb = (xb >> 16) + ((xb & 32768) >> 15);
-			ww_hline( xa, xb, y, color);
+			ww_draw_hline( xa, xb, y, color);
 		}
 	}
-
+	
+	free(gfxPrimitivesPolyInts);
+	
 	return (result);
 }
 
-int ww_polygon(ww_polygon_t * poly){
-	return ww_raw_polygon(poly->x, poly->y, poly->points, poly->color);
+int ww_draw_polygon(ww_polygon_t * poly){
+	return ww_draw_raw_polygon(poly->x, poly->y, poly->points, poly->color);
 }
 
 ww_polygon_t * ww_new_polygon(unsigned char color[3], short * x, short * y, int points){
@@ -263,4 +268,10 @@ ww_polygon_t * ww_new_polygon(unsigned char color[3], short * x, short * y, int 
 	poly->points = points;
 	
 	return poly;
+}
+
+void ww_free_polygon(ww_polygon_t * poly){
+	free(poly->x);
+	free(poly->y);
+	free(poly);
 }

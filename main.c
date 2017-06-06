@@ -15,13 +15,14 @@ int main( void ) {
 	}
 	
 	ww_polygon_t * pink_pentagon = ww_new_polygon(pink, pentagon_x, pentagon_y, 5);
-	ww_polygon(pink_pentagon);
+	ww_draw_polygon(pink_pentagon);
 	
 	while(!ww_window_received_quit_event()) {
 		ww_window_update_events();
 		ww_window_update_buffer();
 	}
 	
+	ww_free_polygon(pink_pentagon);
 	ww_window_destroy();
 	return 0;
 }

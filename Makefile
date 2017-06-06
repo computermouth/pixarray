@@ -1,6 +1,6 @@
 
 all:
-	gcc main.c -Wall -std=c11 -o main -lSDL2
+	gcc main.c -Wall -pedantic -std=c11 -o main -lSDL2
 
 run:
 	./main
