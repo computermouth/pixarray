@@ -57,7 +57,7 @@ int ww_window_create(char* title, int width, int height) {
 		printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
 		return -1;
 	}
-	window_p->ww_sdl_renderer = SDL_CreateRenderer( window_p->ww_sdl_window, -1, SDL_RENDERER_ACCELERATED ); //SDL_RENDERER_SOFTWARE
+	window_p->ww_sdl_renderer = SDL_CreateRenderer( window_p->ww_sdl_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC ); //SDL_RENDERER_SOFTWARE
 	
 	if(!window_p->ww_sdl_renderer) {
 		printf( "Renderer could not be created! SDL_Error: %s\n", SDL_GetError() );
@@ -145,7 +145,7 @@ int ww_window_update_buffer() {
 	memcpy( texture_pixels, buffer, window_p->ww_pitch*window_p->ww_height );
     SDL_UnlockTexture( window_p->ww_sdl_texture );
 
-    SDL_RenderClear( window_p->ww_sdl_renderer );
+    //~ SDL_RenderClear( window_p->ww_sdl_renderer );
     SDL_RenderCopy( window_p->ww_sdl_renderer, window_p->ww_sdl_texture, NULL, NULL );
     SDL_RenderPresent( window_p->ww_sdl_renderer );
 
