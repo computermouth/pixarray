@@ -30,11 +30,18 @@ typedef struct {
 	int points;
 } ww_polygon_t;
 
+typedef enum { None, Lightness } ww_greyscale_t;
+typedef enum { B1 = 1, B2 = 2, B4 = 4, B8 = 8, B16 = 16, B32 = 32, B64 = 64, B128 = 128, B256 = 256 , B512 = 512  , B1024 = 1024 } ww_bitlevel_t;
+
 extern ww_window_t window;
 extern ww_pixel_buffer_t buffer;
+extern ww_greyscale_t greyscale;
+extern ww_bitlevel_t bitlevel;
 
 ww_window_t window = NULL;
 ww_pixel_buffer_t buffer = NULL;
+ww_greyscale_t greyscale = None;
+ww_bitlevel_t bitlevel = B1;
 
 int ww_window_create(char* title, int width, int height) {
 
@@ -152,6 +159,19 @@ int ww_window_update_buffer() {
 	return 0;
 }
 
+unsigned char ww_round_bits (int i) {
+	
+	if ( i == 0xff ) { return 0xff; }
+	if ( i == 0x00 ) { return 0x00; }
+	
+	int t = ((i + bitlevel / 2 ) / bitlevel ) * bitlevel - 1;
+	
+	if ( t < 0x00 )	{ t = 0x00; return t; }
+	if ( t > 0xff )	{ t = 0xff; return t; }
+	
+	return t;
+}
+
 void ww_draw_pixel( uint32_t x, uint32_t y, void * value ){
 	ww_window_s *window_p = (ww_window_s*) window;
 	
@@ -257,6 +277,16 @@ int ww_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, void * colo
 }
 
 int ww_draw_polygon(ww_polygon_t * poly){
+	
+	if ( bitlevel != B1 ){
+		unsigned char tmp[3] = {
+			ww_round_bits(poly->color[0]),
+			ww_round_bits(poly->color[1]),
+			ww_round_bits(poly->color[2])
+		};
+		return ww_draw_raw_polygon(poly->x, poly->y, poly->points, &tmp);
+	}
+	
 	return ww_draw_raw_polygon(poly->x, poly->y, poly->points, poly->color);
 }
 
