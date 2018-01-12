@@ -19,29 +19,61 @@ typedef struct{
 	SDL_Texture* ww_sdl_texture;
 	int ww_width;
 	int ww_height;
+	int ww_default_width;
+	int ww_default_height;
+	int ww_pad_x;
+	int ww_pad_y;
+	float ww_ratio;
 	int ww_pitch;
 	int ww_received_quit_event;
+	int focus;
+	int min;
+	int fs;
 } ww_window_s;
 
 typedef struct {
 	unsigned char color[3];
 	short *x;
 	short *y;
+	float ratio;
+	int pad_x;
+	int pad_y;
+	short *scaled_x;
+	short *scaled_y;
 	int points;
 } ww_polygon_t;
 
-typedef enum { None, Lightness } ww_greyscale_t;
-typedef enum { B1 = 1, B2 = 2, B4 = 4, B8 = 8, B16 = 16, B32 = 32, B64 = 64, B128 = 128, B256 = 256 , B512 = 512  , B1024 = 1024 } ww_bitlevel_t;
+typedef struct{
+	unsigned char esc;
+	unsigned char ent;
+	unsigned char w;
+	unsigned char a;
+	unsigned char s;
+	unsigned char d;
+	unsigned char up;
+	unsigned char dn;
+	unsigned char lt;
+	unsigned char rt;
+} ww_keystate_t;
 
 extern ww_window_t window;
 extern ww_pixel_buffer_t buffer;
-extern ww_greyscale_t greyscale;
-extern ww_bitlevel_t bitlevel;
+extern ww_keystate_t keystate;
 
 ww_window_t window = NULL;
 ww_pixel_buffer_t buffer = NULL;
-ww_greyscale_t greyscale = None;
-ww_bitlevel_t bitlevel = B1;
+ww_keystate_t keystate = {
+	.esc = 0,
+	.ent = 0,
+	.w = 0,
+	.a = 0,
+	.s = 0,
+	.d = 0,
+	.up = 0,
+	.dn = 0,
+	.lt = 0,
+	.rt = 0
+};
 
 int ww_window_create(char* title, int width, int height) {
 
@@ -56,10 +88,16 @@ int ww_window_create(char* title, int width, int height) {
 
 	window_p->ww_width = width;
 	window_p->ww_height = height;
+	window_p->ww_default_width = width;
+	window_p->ww_default_height = height;
+	window_p->ww_ratio = 1.0;
 	window_p->ww_sdl_window = SDL_CreateWindow( title,
-								SDL_WINDOWPOS_UNDEFINED,
-								SDL_WINDOWPOS_UNDEFINED,
-								width, height, SDL_WINDOW_SHOWN );
+								SDL_WINDOWPOS_CENTERED,
+								SDL_WINDOWPOS_CENTERED,
+								width, height, 
+								SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE |
+								SDL_RENDERER_PRESENTVSYNC );
+	
 	if(!window_p->ww_sdl_window) {
 		printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
 		return -1;
@@ -107,7 +145,177 @@ int ww_window_destroy() {
 	return 0;
 }
 
-int ww_window_update_events() {
+int ww_window_event(SDL_Event *event){
+	
+	ww_window_s *window_p = (ww_window_s*) window;
+	int rc = 0;
+	
+	const Uint8* currentKeyStates = SDL_GetKeyboardState( NULL );
+	if( event->type == SDL_WINDOWEVENT )
+	{
+		
+		switch( event->window.event )
+		{
+			case SDL_WINDOWEVENT_SIZE_CHANGED:
+				window_p->ww_width = event->window.data1;
+				window_p->ww_height = event->window.data2;
+				
+				if(((float)window_p->ww_width / (float)window_p->ww_default_width) >= 
+					((float)window_p->ww_height / (float)window_p->ww_default_height)){
+					//larger width ratio
+					window_p->ww_ratio = ((float)window_p->ww_height / 
+						(float)window_p->ww_default_height);
+					window_p->ww_pad_x = ((window_p->ww_width - 
+						(window_p->ww_default_width * window_p->ww_ratio))) / 2;
+					window_p->ww_pad_y	= 0;
+				}else{
+					//larger height ratio
+					window_p->ww_ratio = ((float)window_p->ww_width / 
+						(float)window_p->ww_default_width);
+					window_p->ww_pad_x	= 0;
+					window_p->ww_pad_y	= ((window_p->ww_height - 
+						(window_p->ww_default_height * window_p->ww_ratio))) / 2;
+				}
+				
+				printf("n_w: %d\tn_h: %d\n", window_p->ww_width, window_p->ww_height);
+				printf("padx: %d\tpady: %d\n", window_p->ww_pad_x, window_p->ww_pad_y);
+				
+				// should realloc
+				free(buffer);
+				buffer = calloc(window_p->ww_width * window_p->ww_height * 4, sizeof(char));
+				
+				if(buffer == NULL) {
+					printf( "Buffer could not be resized!\n" );
+					return -1;
+				}
+				
+				if(window_p->ww_sdl_texture) SDL_DestroyTexture( window_p->ww_sdl_texture );
+				
+				window_p->ww_sdl_texture = SDL_CreateTexture( window_p->ww_sdl_renderer,
+					SDL_PIXELFORMAT_BGR888,
+					SDL_TEXTUREACCESS_STREAMING,
+					window_p->ww_width, window_p->ww_height );
+				
+				if(!window_p->ww_sdl_texture) {
+					printf( "Screen texture could not be created! SDL_Error: %s\n", SDL_GetError() );
+					return -1;
+				}
+				
+				break;
+				
+			case SDL_WINDOWEVENT_FOCUS_GAINED:
+				window_p->focus = 1;
+				break;
+
+			case SDL_WINDOWEVENT_FOCUS_LOST:
+				window_p->focus = 0;
+				break;
+
+			case SDL_WINDOWEVENT_MINIMIZED:
+				window_p->min = 1;
+				break;
+
+			case SDL_WINDOWEVENT_MAXIMIZED:
+				window_p->min = 0;
+				break;
+			
+			case SDL_WINDOWEVENT_RESTORED:
+				window_p->min = 0;
+				break;
+		}
+	}
+	if(event->type == SDL_KEYDOWN ){
+		if( ((currentKeyStates[SDL_SCANCODE_RETURN]) && 
+		((currentKeyStates[SDL_SCANCODE_RALT]) || 
+		(currentKeyStates[SDL_SCANCODE_LALT]))) ){
+			if( window_p->fs ){
+				SDL_SetWindowFullscreen( window_p->ww_sdl_window, SDL_FALSE );
+				window_p->fs = 0;
+			}else{
+				SDL_SetWindowFullscreen( window_p->ww_sdl_window, 
+					SDL_WINDOW_FULLSCREEN_DESKTOP );
+				window_p->fs = 1;
+			}
+			
+			rc = 1;
+		}
+	}
+	
+	return rc;
+}
+
+void ww_key_event(SDL_Event *event){
+	
+	if( event->type == SDL_KEYDOWN ){
+		switch(event->key.keysym.sym){
+			case SDLK_ESCAPE:
+				keystate.esc = 1;
+				break;
+			case SDLK_RETURN:
+				keystate.ent = 1;
+				break;
+			case SDLK_UP:
+				keystate.up = 1;
+				break;
+			case SDLK_DOWN:
+				keystate.dn = 1;
+				break;
+			case SDLK_LEFT:
+				keystate.lt = 1;
+				break;
+			case SDLK_RIGHT:
+				keystate.rt = 1;
+				break;
+			case SDLK_w:
+				keystate.w = 1;
+				break;
+			case SDLK_a:
+				keystate.a = 1;
+				break;
+			case SDLK_s:
+				keystate.s = 1;
+				break;
+			case SDLK_d:
+				keystate.d = 1;
+				break;
+		}
+	} else if ( event->type == SDL_KEYUP) {
+		switch(event->key.keysym.sym){
+			case SDLK_ESCAPE:
+				keystate.esc = 0;
+				break;
+			case SDLK_RETURN:
+				keystate.ent = 0;
+				break;
+			case SDLK_UP:
+				keystate.up = 0;
+				break;
+			case SDLK_DOWN:
+				keystate.dn = 0;
+				break;
+			case SDLK_LEFT:
+				keystate.lt = 0;
+				break;
+			case SDLK_RIGHT:
+				keystate.rt = 0;
+				break;
+			case SDLK_w:
+				keystate.w = 0;
+				break;
+			case SDLK_a:
+				keystate.a = 0;
+				break;
+			case SDLK_s:
+				keystate.s = 0;
+				break;
+			case SDLK_d:
+				keystate.d = 0;
+				break;
+		}
+	}
+}
+
+int ww_window_update_events(){
 	if(!window) {
 		fprintf( stderr, "Cannot update non-existent window\n" );
 		return -1;
@@ -117,10 +325,14 @@ int ww_window_update_events() {
 
 	SDL_Event event;
 	while(SDL_PollEvent(&event)) {
-		switch(event.type) {
+		switch(event.type){
 			case SDL_QUIT:
 				window_p->ww_received_quit_event = 1;
-			break;
+				break;
+			default:
+				if ( ! ww_window_event(&event))
+					ww_key_event(&event);
+				break;
 		}
 	}
 	return 0;
@@ -134,42 +346,6 @@ int ww_window_received_quit_event() {
 
 	ww_window_s *window_p = (ww_window_s*) window;
 	return window_p->ww_received_quit_event;
-}
-
-int ww_window_update_buffer() {
-	if(!window) {
-		return -1;
-	}
-	ww_window_s *window_p = (ww_window_s*) window;
-
-	void *texture_pixels = NULL;
-	window_p->ww_pitch = 0;
-	if(SDL_LockTexture( window_p->ww_sdl_texture, NULL, &texture_pixels, &window_p->ww_pitch )) {
-		fprintf( stderr, "Could not lock texture: %s\n", SDL_GetError() );
-		return -1;
-	}
-	
-	memcpy( texture_pixels, buffer, window_p->ww_pitch*window_p->ww_height );
-    SDL_UnlockTexture( window_p->ww_sdl_texture );
-
-    //~ SDL_RenderClear( window_p->ww_sdl_renderer );
-    SDL_RenderCopy( window_p->ww_sdl_renderer, window_p->ww_sdl_texture, NULL, NULL );
-    SDL_RenderPresent( window_p->ww_sdl_renderer );
-
-	return 0;
-}
-
-unsigned char ww_round_bits (int i) {
-	
-	if ( i == 0xff ) { return 0xff; }
-	if ( i == 0x00 ) { return 0x00; }
-	
-	int t = ((i + bitlevel / 2 ) / bitlevel ) * bitlevel - 1;
-	
-	if ( t < 0x00 )	{ t = 0x00; return t; }
-	if ( t > 0xff )	{ t = 0xff; return t; }
-	
-	return t;
 }
 
 void ww_draw_pixel( uint32_t x, uint32_t y, void * value ){
@@ -188,9 +364,9 @@ void ww_draw_hline( int32_t x1, int32_t x2, int32_t y, void * value){
 	
 	if( x1 < 0 )
 		x1 = 0;
-	if( x2 > window_p->ww_width )
+	if( x2 > window_p->ww_width - 1 )
 		x2 = window_p->ww_width - 1;
-	if( y  > window_p->ww_height || y < 0 ||x2 <= x1 ){
+	if( y  > window_p->ww_height - 1 || y < 0 || x2 <= x1 ){
 		return;
 	}
 	
@@ -276,18 +452,30 @@ int ww_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, void * colo
 	return (result);
 }
 
-int ww_draw_polygon(ww_polygon_t * poly){
+void ww_scale_polygon(ww_polygon_t * poly){
+	ww_window_s *window_p = (ww_window_s*) window;
 	
-	if ( bitlevel != B1 ){
-		unsigned char tmp[3] = {
-			ww_round_bits(poly->color[0]),
-			ww_round_bits(poly->color[1]),
-			ww_round_bits(poly->color[2])
-		};
-		return ww_draw_raw_polygon(poly->x, poly->y, poly->points, &tmp);
+	if( poly->ratio != window_p->ww_ratio || 
+		poly->pad_x != window_p->ww_pad_x ||
+		poly->pad_y != window_p->ww_pad_y){
+		
+		poly->ratio = window_p->ww_ratio;
+		poly->pad_x = window_p->ww_pad_x;
+		poly->pad_y = window_p->ww_pad_y;
+		
+		for(int i = 0; i < poly->points; i++){
+			poly->scaled_x[i] = (poly->x[i] ) * poly->ratio + poly->pad_x;
+			poly->scaled_y[i] = (poly->y[i] ) * poly->ratio + poly->pad_y;
+		}
+	
 	}
 	
-	return ww_draw_raw_polygon(poly->x, poly->y, poly->points, poly->color);
+}
+
+int ww_draw_polygon(ww_polygon_t * poly){
+	ww_scale_polygon(poly);
+		
+	return ww_draw_raw_polygon(poly->scaled_x, poly->scaled_y, poly->points, poly->color);
 }
 
 ww_polygon_t * ww_new_polygon(unsigned char color[3], short * x, short * y, int points){
@@ -297,6 +485,12 @@ ww_polygon_t * ww_new_polygon(unsigned char color[3], short * x, short * y, int 
 	poly->y = calloc(points, sizeof(short));
 	memcpy(poly->x, x, points*sizeof(short));
 	memcpy(poly->y, y, points*sizeof(short));
+	
+	poly->scaled_x = calloc(points, sizeof(short));
+	poly->scaled_y = calloc(points, sizeof(short));
+	memcpy(poly->scaled_x, x, points*sizeof(short));
+	memcpy(poly->scaled_y, y, points*sizeof(short));
+	
 	memcpy(poly->color, color, 3);
 	poly->points = points;
 	
@@ -306,7 +500,75 @@ ww_polygon_t * ww_new_polygon(unsigned char color[3], short * x, short * y, int 
 void ww_free_polygon(ww_polygon_t * poly){
 	free(poly->x);
 	free(poly->y);
+	free(poly->scaled_x);
+	free(poly->scaled_y);
 	free(poly);
+}
+
+void ww_render_bars(){
+	
+	ww_window_s *window_p = (ww_window_s*) window;
+	
+	unsigned char bar_grey[] = { 0x1C, 0x1F, 0x20 };
+	
+	if (window_p->ww_pad_x != 0){
+		// left
+		short bar_ax[4] = { 0, window_p->ww_pad_x, window_p->ww_pad_x, 0 };
+		short bar_ay[4] = { 0, 0, window_p->ww_height, window_p->ww_height };
+		ww_draw_raw_polygon(bar_ax, bar_ay, 4, bar_grey);
+		// right
+		short bar_bx[4] = { window_p->ww_width - window_p->ww_pad_x, window_p->ww_width, window_p->ww_width, window_p->ww_width - window_p->ww_pad_x};
+		short bar_by[4] = { 0, 0, window_p->ww_height, window_p->ww_height };
+		ww_draw_raw_polygon(bar_bx, bar_by, 4, bar_grey);
+		
+	} else {
+		// top
+		short bar_ax[4] = { 0, window_p->ww_width,  window_p->ww_width, 0 };
+		short bar_ay[4] = { 0, 0, window_p->ww_pad_y, window_p->ww_pad_y};
+		ww_draw_raw_polygon(bar_ax, bar_ay, 4, bar_grey);
+		// bottom
+		short bar_bx[4] = { 0, window_p->ww_width, window_p->ww_width, 0 };
+		short bar_by[4] = { window_p->ww_height - window_p->ww_pad_y, window_p->ww_height - window_p->ww_pad_y,  window_p->ww_height,  window_p->ww_height};
+		ww_draw_raw_polygon(bar_bx, bar_by, 4, bar_grey);
+		
+	}
+	
+}
+
+int ww_window_update_buffer() {
+	if(!window) {
+		return -1;
+	}
+	ww_window_s *window_p = (ww_window_s*) window;
+
+	ww_render_bars();
+
+	void *texture_pixels = NULL;
+	window_p->ww_pitch = 0;
+	
+	if(SDL_LockTexture( window_p->ww_sdl_texture, NULL, &texture_pixels, &window_p->ww_pitch )) {
+		fprintf( stderr, "Could not lock texture: %s\n", SDL_GetError() );
+		return -1;
+	}
+	
+	memcpy( texture_pixels, buffer, window_p->ww_pitch*window_p->ww_height );
+    SDL_UnlockTexture( window_p->ww_sdl_texture );
+	
+	//~ SDL_Rect dstrect = {
+		//~ .x = window_p->ww_pad_x / 2,
+		//~ .y = window_p->ww_pad_y / 2,
+		//~ .w = window_p->ww_width,
+		//~ .h = window_p->ww_height,
+	//~ };
+	
+	//~ SDL_SetRenderDrawColor(window_p->ww_sdl_renderer, 255, 0, 0, 255);
+	//~ SDL_RenderClear(window_p->ww_sdl_renderer);
+    //~ SDL_RenderCopy( window_p->ww_sdl_renderer, window_p->ww_sdl_texture, NULL, &dstrect );
+    
+    SDL_RenderCopy( window_p->ww_sdl_renderer, window_p->ww_sdl_texture, NULL, NULL );
+    SDL_RenderPresent( window_p->ww_sdl_renderer );
+
+	return 0;
 }
 
 #endif
