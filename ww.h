@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include <SDL2/SDL.h>
 
@@ -40,8 +41,21 @@ typedef struct {
 	int pad_y;
 	short *scaled_x;
 	short *scaled_y;
-	int points;
+	int z_depth;
+	int count;
 } ww_polygon_t;
+
+typedef struct {
+	ww_polygon_t ** polys;
+	int count;
+} ww_frame_t;
+
+typedef struct {
+	ww_frame_t ** frames;
+	int *delay;
+	int z_depth;
+	int count;
+} ww_anim_t;
 
 typedef struct{
 	unsigned char esc;
@@ -176,9 +190,6 @@ int ww_window_event(SDL_Event *event){
 					window_p->ww_pad_y	= ((window_p->ww_height - 
 						(window_p->ww_default_height * window_p->ww_ratio))) / 2;
 				}
-				
-				printf("n_w: %d\tn_h: %d\n", window_p->ww_width, window_p->ww_height);
-				printf("padx: %d\tpady: %d\n", window_p->ww_pad_x, window_p->ww_pad_y);
 				
 				// should realloc
 				free(buffer);
@@ -463,7 +474,7 @@ void ww_scale_polygon(ww_polygon_t * poly){
 		poly->pad_x = window_p->ww_pad_x;
 		poly->pad_y = window_p->ww_pad_y;
 		
-		for(int i = 0; i < poly->points; i++){
+		for(int i = 0; i < poly->count; i++){
 			poly->scaled_x[i] = (poly->x[i] ) * poly->ratio + poly->pad_x;
 			poly->scaled_y[i] = (poly->y[i] ) * poly->ratio + poly->pad_y;
 		}
@@ -475,27 +486,93 @@ void ww_scale_polygon(ww_polygon_t * poly){
 int ww_draw_polygon(ww_polygon_t * poly){
 	ww_scale_polygon(poly);
 		
-	return ww_draw_raw_polygon(poly->scaled_x, poly->scaled_y, poly->points, poly->color);
+	return ww_draw_raw_polygon(poly->scaled_x, poly->scaled_y, poly->count, poly->color);
 }
 
-ww_polygon_t * ww_new_polygon(unsigned char color[3], short * x, short * y, int points){
+ww_polygon_t * ww_new_polygon(unsigned char color[3], short * x, short * y, int count){
 	
 	ww_polygon_t * poly = calloc(1, sizeof(ww_polygon_t));
-	poly->x = calloc(points, sizeof(short));
-	poly->y = calloc(points, sizeof(short));
-	memcpy(poly->x, x, points*sizeof(short));
-	memcpy(poly->y, y, points*sizeof(short));
+	poly->x = calloc(count, sizeof(short));
+	poly->y = calloc(count, sizeof(short));
+	memcpy(poly->x, x, count*sizeof(short));
+	memcpy(poly->y, y, count*sizeof(short));
 	
-	poly->scaled_x = calloc(points, sizeof(short));
-	poly->scaled_y = calloc(points, sizeof(short));
-	memcpy(poly->scaled_x, x, points*sizeof(short));
-	memcpy(poly->scaled_y, y, points*sizeof(short));
+	poly->scaled_x = calloc(count, sizeof(short));
+	poly->scaled_y = calloc(count, sizeof(short));
+	memcpy(poly->scaled_x, x, count*sizeof(short));
+	memcpy(poly->scaled_y, y, count*sizeof(short));
 	
 	memcpy(poly->color, color, 3);
-	poly->points = points;
+	poly->count = count;
 	
 	return poly;
 }
+
+//~ typedef struct {
+	//~ ww_polygon_t *polys;
+	//~ int count;
+//~ } ww_frame_t;
+
+ww_frame_t * ww_new_frame(ww_polygon_t * polys, ...){
+	
+	ww_frame_t * frame = NULL;
+	
+	if(polys == NULL){
+		printf("ww_new_frame called with only NULL argument");
+		return NULL;
+	}
+	
+	frame = calloc(1, sizeof(ww_frame_t));
+	
+	// count items
+	va_list args;
+	ww_polygon_t * tmp = polys;
+	
+	va_start(args, polys);
+	while( tmp != NULL ){
+		frame->count += 1;
+		tmp = va_arg(args, ww_polygon_t *);
+	}
+	va_end(args);
+	
+	// alloc
+	frame->polys = calloc(frame->count, sizeof(ww_polygon_t *));
+	
+	// assign
+	int i = 1;
+	tmp = polys;
+	frame->polys[0] = polys;
+	va_start(args, polys);
+	while( 1 ){
+		tmp = va_arg(args, ww_polygon_t *);
+		
+		if(tmp == NULL)
+			break;
+		
+		frame->polys[i] = tmp;
+		i++;
+	}
+	va_end(args);
+	
+	return frame;
+	
+}
+
+//~ typedef struct {
+	//~ ww_frame_t *frames;
+	//~ int *delay;
+	//~ int z_depth;
+	//~ int count;
+//~ } ww_anim_t;
+
+//~ ww_anim_t * ww_new_animation(unsigned char color[3], short * x, short * y, int count){
+	
+	//~ ww_anim_t * anim = calloc(1, sizeof(ww_anim_t));
+	//~ anim->polys = NULL;
+	//~ anim->delay = NULL;
+	
+	//~ return anim;
+//~ }
 
 void ww_free_polygon(ww_polygon_t * poly){
 	free(poly->x);
@@ -503,6 +580,22 @@ void ww_free_polygon(ww_polygon_t * poly){
 	free(poly->scaled_x);
 	free(poly->scaled_y);
 	free(poly);
+}
+
+void ww_free_frame(ww_frame_t * frame){
+	
+	printf("free call\n");
+	
+	for(int i = 0; i < frame->count; i++){
+		printf("free loop: %d\n", i);
+		ww_free_polygon( frame->polys[i] );
+	}
+	
+	printf("free frame\n");
+	
+	free(frame->polys);
+	free(frame);
+	
 }
 
 void ww_render_bars(){
@@ -553,17 +646,6 @@ int ww_window_update_buffer() {
 	
 	memcpy( texture_pixels, buffer, window_p->ww_pitch*window_p->ww_height );
     SDL_UnlockTexture( window_p->ww_sdl_texture );
-	
-	//~ SDL_Rect dstrect = {
-		//~ .x = window_p->ww_pad_x / 2,
-		//~ .y = window_p->ww_pad_y / 2,
-		//~ .w = window_p->ww_width,
-		//~ .h = window_p->ww_height,
-	//~ };
-	
-	//~ SDL_SetRenderDrawColor(window_p->ww_sdl_renderer, 255, 0, 0, 255);
-	//~ SDL_RenderClear(window_p->ww_sdl_renderer);
-    //~ SDL_RenderCopy( window_p->ww_sdl_renderer, window_p->ww_sdl_texture, NULL, &dstrect );
     
     SDL_RenderCopy( window_p->ww_sdl_renderer, window_p->ww_sdl_texture, NULL, NULL );
     SDL_RenderPresent( window_p->ww_sdl_renderer );

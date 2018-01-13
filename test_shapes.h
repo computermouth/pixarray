@@ -41,8 +41,8 @@ void test_shapes_init(){
 	yellow_octagon = ww_new_polygon(yellow, yellow_octagon_x, yellow_octagon_y, 8);
 	
 	ww_rgba_t green = { 0x81, 0xff, 0xa0 };
-	short triangle0_x[3] = {  38,  76, 105 };
-	short triangle0_y[3] = { 120,  10, 376 };
+	short triangle0_x[3] = {  - 38,  76, 805 };
+	short triangle0_y[3] = {  - 120,  10, 806 };
 	triangle0 = ww_new_polygon(green, triangle0_x, triangle0_y, 3);
 	
 	ww_rgba_t purple = { 0x57, 0x00, 0x6d };
