@@ -55,7 +55,7 @@ typedef struct {
 	int *delay;
 	int z_depth;
 	int count;
-} ww_anim_t;
+} ww_animation_t;
 
 typedef struct{
 	unsigned char esc;
@@ -489,6 +489,19 @@ int ww_draw_polygon(ww_polygon_t * poly){
 	return ww_draw_raw_polygon(poly->scaled_x, poly->scaled_y, poly->count, poly->color);
 }
 
+int ww_draw_frame(ww_frame_t * frame){
+	
+	int rc = 0;
+	
+	// TODO implement z-depth sorted draws
+	for(int i = 0; i < frame->count; i++){
+		rc += ww_draw_polygon(frame->polys[i]);
+	}
+	
+	return rc;
+	
+}
+
 ww_polygon_t * ww_new_polygon(unsigned char color[3], short * x, short * y, int count){
 	
 	ww_polygon_t * poly = calloc(1, sizeof(ww_polygon_t));
@@ -507,11 +520,6 @@ ww_polygon_t * ww_new_polygon(unsigned char color[3], short * x, short * y, int 
 	
 	return poly;
 }
-
-//~ typedef struct {
-	//~ ww_polygon_t *polys;
-	//~ int count;
-//~ } ww_frame_t;
 
 ww_frame_t * ww_new_frame(ww_polygon_t * polys, ...){
 	
@@ -559,20 +567,60 @@ ww_frame_t * ww_new_frame(ww_polygon_t * polys, ...){
 }
 
 //~ typedef struct {
-	//~ ww_frame_t *frames;
+	//~ ww_frame_t ** frames;
 	//~ int *delay;
 	//~ int z_depth;
 	//~ int count;
-//~ } ww_anim_t;
+//~ } ww_animation_t;
 
-//~ ww_anim_t * ww_new_animation(unsigned char color[3], short * x, short * y, int count){
+ww_animation_t * ww_new_animation(int depth, int * delay, ww_frame_t * frames, ...){
 	
-	//~ ww_anim_t * anim = calloc(1, sizeof(ww_anim_t));
-	//~ anim->polys = NULL;
-	//~ anim->delay = NULL;
+	ww_animation_t * anim = NULL;
 	
-	//~ return anim;
-//~ }
+	if(frames == NULL){
+		printf("ww_new_animation called with only NULL argument");
+		return NULL;
+	}
+	
+	anim = calloc(1, sizeof(ww_animation_t));
+	
+	// count items
+	va_list args;
+	ww_frame_t * tmp = frames;
+	
+	va_start(args, frames);
+	while( tmp != NULL ){
+		anim->count += 1;
+		tmp = va_arg(args, ww_frame_t *);
+	}
+	va_end(args);
+	
+	// alloc
+	anim->frames = calloc(anim->count, sizeof(ww_frame_t *));
+	
+	// assign
+	anim->delay = calloc(anim->count, sizeof(int));
+	memcpy(anim->delay, delay, anim->count*sizeof(int));
+	anim->z_depth = depth;
+	
+	int i = 1;
+	tmp = frames;
+	anim->frames[0] = frames;
+	va_start(args, frames);
+	
+	while( 1 ){
+		tmp = va_arg(args, ww_frame_t *);
+		
+		if(tmp == NULL)
+			break;
+		
+		anim->frames[i] = tmp;
+		i++;
+	}
+	va_end(args);
+	
+	return anim;
+}
 
 void ww_free_polygon(ww_polygon_t * poly){
 	free(poly->x);
@@ -584,17 +632,24 @@ void ww_free_polygon(ww_polygon_t * poly){
 
 void ww_free_frame(ww_frame_t * frame){
 	
-	printf("free call\n");
-	
 	for(int i = 0; i < frame->count; i++){
-		printf("free loop: %d\n", i);
 		ww_free_polygon( frame->polys[i] );
 	}
 	
-	printf("free frame\n");
-	
 	free(frame->polys);
 	free(frame);
+	
+}
+
+void ww_free_anim(ww_animation_t * anim){
+	
+	for(int i = 0; i < anim->count; i++){
+		ww_free_frame( anim->frames[i] );
+	}
+	
+	free(anim->delay);
+	free(anim->frames);
+	free(anim);
 	
 }
 
