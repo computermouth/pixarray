@@ -53,6 +53,8 @@ typedef struct {
 typedef struct {
 	ww_frame_t ** frames;
 	int *delay;
+	int active_frame;
+	int d_progress;
 	int z_depth;
 	int count;
 } ww_animation_t;
@@ -484,8 +486,9 @@ void ww_scale_polygon(ww_polygon_t * poly){
 }
 
 int ww_draw_polygon(ww_polygon_t * poly){
+	
 	ww_scale_polygon(poly);
-		
+	
 	return ww_draw_raw_polygon(poly->scaled_x, poly->scaled_y, poly->count, poly->color);
 }
 
@@ -496,6 +499,26 @@ int ww_draw_frame(ww_frame_t * frame){
 	// TODO implement z-depth sorted draws
 	for(int i = 0; i < frame->count; i++){
 		rc += ww_draw_polygon(frame->polys[i]);
+	}
+	
+	return rc;
+	
+}
+
+int ww_draw_animation(ww_animation_t * anim){
+	
+	int rc = ww_draw_frame(anim->frames[anim->active_frame]);
+	
+	if(anim->d_progress == 0){
+		anim->active_frame++;
+		anim->d_progress = anim->delay[anim->active_frame];
+	} else {
+		anim->d_progress--;
+	}
+	
+	if(anim->active_frame == anim->count){
+		anim->active_frame = 0;
+		anim->d_progress = anim->delay[anim->active_frame];
 	}
 	
 	return rc;
@@ -566,13 +589,6 @@ ww_frame_t * ww_new_frame(ww_polygon_t * polys, ...){
 	
 }
 
-//~ typedef struct {
-	//~ ww_frame_t ** frames;
-	//~ int *delay;
-	//~ int z_depth;
-	//~ int count;
-//~ } ww_animation_t;
-
 ww_animation_t * ww_new_animation(int depth, int * delay, ww_frame_t * frames, ...){
 	
 	ww_animation_t * anim = NULL;
@@ -601,6 +617,7 @@ ww_animation_t * ww_new_animation(int depth, int * delay, ww_frame_t * frames, .
 	// assign
 	anim->delay = calloc(anim->count, sizeof(int));
 	memcpy(anim->delay, delay, anim->count*sizeof(int));
+	anim->d_progress = anim->delay[0];
 	anim->z_depth = depth;
 	
 	int i = 1;
@@ -681,6 +698,14 @@ void ww_render_bars(){
 		
 	}
 	
+}
+
+void ww_clear_buffer(){
+	
+	ww_window_s *window_p = (ww_window_s*) window;
+	
+	memset(buffer, 0x00, window_p->ww_width * window_p->ww_height * 4 * sizeof(char));
+
 }
 
 int ww_window_update_buffer() {

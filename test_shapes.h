@@ -28,8 +28,22 @@ ww_polygon_t * triangle8 = NULL;
 extern ww_polygon_t * triangle9;
 ww_polygon_t * triangle9 = NULL;
 
+
+extern ww_frame_t * tri012;	
+ww_frame_t * tri012 = NULL;
+extern ww_frame_t * tri345;
+ww_frame_t * tri345 = NULL;
+extern ww_frame_t * tri6789;
+ww_frame_t * tri6789 = NULL;
+extern ww_frame_t * pentaocta;
+ww_frame_t * pentaocta = NULL;
+extern ww_animation_t * tripenta;
+ww_animation_t * tripenta = NULL;
+
+
 void test_shapes_init(){
 	
+	// polys
 	ww_rgba_t pink = { 0xa5, 0x54, 0x90 };
 	short pentagon_x[5] = { 290, 380, 500, 480, 310};
 	short pentagon_y[5] = { 270, 160, 270, 410, 420};
@@ -89,5 +103,15 @@ void test_shapes_init(){
 	short triangle9_x[3] = { 128, 166, 195 };
 	short triangle9_y[3] = { 120,  10, 376 };
 	triangle9 = ww_new_polygon(lavender, triangle9_x, triangle9_y, 3);
-
+	
+	// frames
+	tri012 = ww_new_frame(triangle0, triangle1, triangle2, NULL);
+	tri345 = ww_new_frame(triangle3, triangle4, triangle5, NULL);
+	tri6789 = ww_new_frame(triangle6, triangle7, triangle8, triangle9, NULL);
+	pentaocta = ww_new_frame(pink_pentagon, yellow_octagon, NULL);
+	
+	// anim
+	int delay[] = { 0 , 60, 120 , 60 };
+	tripenta = ww_new_animation(0, delay, tri012, tri345, tri6789, pentaocta, NULL);
+	
 }
