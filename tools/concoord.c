@@ -88,8 +88,10 @@ int main(int argc, char *argv[]){
 	int shape_index = 0;
 	int num_shapes = 0;
 	int point_index = 0;
+	unsigned int line_index = 0;
 	
 	while ( (read = getline(&line, &len, fp)) != -1 ) {
+		line_index++;
 		
 		// get number of shapes
 		if(stage == Find_Shapes){
@@ -129,7 +131,7 @@ int main(int argc, char *argv[]){
 				polys[shape_index]->name = calloc(strlen(name) + 1, sizeof(char));
 				strcpy(polys[shape_index]->name, name);
 				
-				//~ printf("name: %s\n", name);
+				printf("name: %s\n", name);
 				
 				stage = Find_Points;
 			}
@@ -151,7 +153,7 @@ int main(int argc, char *argv[]){
 				polys[shape_index]->x = calloc(polys[shape_index]->count, sizeof(short));
 				polys[shape_index]->y = calloc(polys[shape_index]->count, sizeof(short));
 				
-				//~ printf("points: %d\n", polys[shape_index]->count);
+				printf("points: %d\n", polys[shape_index]->count);
 				
 				stage = Parse_Points;
 			}
@@ -181,8 +183,7 @@ int main(int argc, char *argv[]){
 			// set x[point_index]
 			polys[shape_index]->x[point_index] = (int)atof(token);
 			// restore line
-			free(line);
-			line = dup_line;
+			strcpy(line, dup_line);
 			
 			// find y[point_index] between ',' and '>'
 			delim_pos = NULL;
@@ -202,16 +203,71 @@ int main(int argc, char *argv[]){
 			
 			point_index += 1;
 			if(point_index == polys[shape_index]->count){
-				shape_index += 1;
 				point_index = 0;
 				stage = Parse_Color;
 			}
 			
+			free(dup_line);
+			
 			continue;
 		}
 		
-	
+		if(stage == Parse_Color){
+			char * needle = "_COLOR    = ";
+			char * found = NULL;
+			
+			found = strstr(line, needle);
+			
+			if(found == NULL)
+				continue;
+				
+			printf("line[%d]: %s", line_index, line);
+			
+			//~ char * dup_line = NULL;
+			//~ dup_line = calloc(len, sizeof(char));
+			//~ strcpy(dup_line, line);
+			
+			
+			// find color[r] between '<' and ','
+			char * delim_pos = NULL;
+			
+			delim_pos = strchr(line, '<');
+			if(delim_pos == NULL){
+				printf("e: failed to parse x point\n");
+				return 1;
+			}
+			
+			char * token = NULL;
+			token = strtok(delim_pos+1, ",");
+			
+			// set color[r]
+			printf("token0: %s\n", token);
+			polys[shape_index]->color[0] = (int)(atof(token) * 255);
+			token = strtok(NULL, ",");
+			printf("token1: %s\n", token);
+			polys[shape_index]->color[1] = (int)(atof(token) * 255);
+			token = strtok(NULL, ",");
+			printf("token2: %s\n", token);
+			polys[shape_index]->color[2] = (int)(atof(token) * 255);
+			
+			//~ printf("c[0]: %d\nc[1]: %d\nc[2]: %d\n",
+				//~ polys[shape_index]->color[0],
+				//~ polys[shape_index]->color[1],
+				//~ polys[shape_index]->color[2]);
+			
+			
+			stage = Find_Name;
+			shape_index += 1;
+			
+			if(shape_index == num_shapes)
+				break;
+			
+			continue;
+		}
+		
 	}
+	
+	printf("at frees\n");
 	
 	for(int i = 0; i < num_shapes; i++){
 		free(polys[i]->name);
@@ -224,8 +280,6 @@ int main(int argc, char *argv[]){
 	fclose(fp);
 	if ( line !=NULL )
 		free(line);
-	
-	
 	
 	return 0;
 }
