@@ -290,6 +290,30 @@ int main(int argc, char *argv[]){
 	period[0] = '\0';
 	char * frame_name = filename;
 	
+	// create copyable block
+	rc = fprintf(out_fp, "/* COPY BLOCK ==========================================================\n\n");
+	if(rc < 0){
+		printf("e: failed to write to %s", output_file);
+		return rc;
+	}
+	
+	for(int i = 0; i < num_shapes; i++){
+		rc = fprintf(out_fp, 
+			"%s_%s\n",
+			frame_name, polys[i]->name);
+		if(rc < 0){
+			printf("e: failed to write to %s", output_file);
+			return rc;
+		}
+	}
+	
+	// create copyable block
+	rc = fprintf(out_fp, "\n==================================================================== */\n\n");
+	if(rc < 0){
+		printf("e: failed to write to %s", output_file);
+		return rc;
+	}
+	
 	// write externs and declarations
 	for(int i = 0; i < num_shapes; i++){
 		rc = fprintf(out_fp, 
