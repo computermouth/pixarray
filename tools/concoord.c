@@ -23,9 +23,9 @@ typedef enum {
 
 int main(int argc, char *argv[]){
 	
-	if (argc != 4){
+	if (argc != 6){
 		printf("%s usage: \n", argv[0]);
-		printf("\t%s -d [output dir] [file]\n", argv[0]);
+		printf("\t%s -d [output dir] -h [height in pixels] [file]\n", argv[0]);
 		return 1;
 	}
 	
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]){
 	char full_path[4097];
 	char copy_path[4097];
 	char *filepath = NULL;
-	filepath = realpath(argv[3], full_path);
+	filepath = realpath(argv[5], full_path);
 	memcpy(copy_path, full_path, 4097 * sizeof(char));
 	
 	if (filepath != NULL){
@@ -197,7 +197,7 @@ int main(int argc, char *argv[]){
 			token = strtok(delim_pos+1, ">");
 			
 			// set y[point_index]
-			polys[shape_index]->y[point_index] = (int)atof(token);
+			polys[shape_index]->y[point_index] = ((int)atof(token)) * -1 + atoi(argv[4]);
 			
 			//~ printf("x[%d]: %d\ty[%d]: %d\n", point_index, polys[shape_index]->x[point_index], point_index, polys[shape_index]->y[point_index]);
 			
@@ -271,6 +271,10 @@ int main(int argc, char *argv[]){
 	
 	// create new file
 	FILE *out_fp = NULL;
+	
+	// get filename without extension
+	period[0] = '\0';
+	char * frame_name = filename;
 		
 	out_fp = fopen(output_file,"w+");
 	if(out_fp == NULL){
@@ -280,35 +284,8 @@ int main(int argc, char *argv[]){
 	
 	int rc = 0;
 	// write shapes out to header
-	rc = fprintf(out_fp, "\n#include \"ww.h\"\n\n#ifndef TEST_SHAPES_H\n#define TEST_SHAPES_H\n\n");
-	if(rc < 0){
-		printf("e: failed to write to %s", output_file);
-		return rc;
-	}
-	
-	// get filename without extension
-	period[0] = '\0';
-	char * frame_name = filename;
-	
-	// create copyable block
-	rc = fprintf(out_fp, "/* COPY BLOCK ==========================================================\n\n");
-	if(rc < 0){
-		printf("e: failed to write to %s", output_file);
-		return rc;
-	}
-	
-	for(int i = 0; i < num_shapes; i++){
-		rc = fprintf(out_fp, 
-			"%s_%s\n",
-			frame_name, polys[i]->name);
-		if(rc < 0){
-			printf("e: failed to write to %s", output_file);
-			return rc;
-		}
-	}
-	
-	// create copyable block
-	rc = fprintf(out_fp, "\n==================================================================== */\n\n");
+	rc = fprintf(out_fp, "\n#include \"ww.h\"\n\n#ifndef %s_H\n#define %s_H\n\n",
+		frame_name, frame_name);
 	if(rc < 0){
 		printf("e: failed to write to %s", output_file);
 		return rc;
@@ -326,8 +303,18 @@ int main(int argc, char *argv[]){
 		}
 	}
 	
+	// declare frame
+	rc = fprintf(out_fp, 
+		"\nextern ww_frame_t * %s_frame;\nww_frame_t * %s_frame = NULL;\n", 
+		frame_name,
+		frame_name);
+	if(rc < 0){
+		printf("e: failed to write to %s", output_file);
+		return rc;
+	}
+	
 	// start init function
-	rc = fprintf(out_fp, "\n\nvoid init_%s(){\n\n", frame_name);
+	rc = fprintf(out_fp, "\nvoid init_%s(){\n\n", frame_name);
 	if(rc < 0){
 		printf("e: failed to write to %s", output_file);
 		return rc;
@@ -413,9 +400,37 @@ int main(int argc, char *argv[]){
 		
 	}
 	
+	// open initialize frame
+	rc = fprintf(out_fp, 
+		"\t%s_frame = ww_new_frame(", 
+		frame_name);
+	if(rc < 0){
+		printf("e: failed to write to %s", output_file);
+		return rc;
+	}
+	
+	// fill frame initialization
+	for(int i = 0; i < num_shapes; i++){
+		rc = fprintf(out_fp, 
+			" %s_%s,", 
+			frame_name, polys[i]->name );
+		if(rc < 0){
+			printf("e: failed to write to %s", output_file);
+			return rc;
+		}
+	}	
+	
+	// close initialize frame
+	rc = fprintf(out_fp, 
+		" NULL);\n");
+	if(rc < 0){
+		printf("e: failed to write to %s", output_file);
+		return rc;
+	}
+	
 	// end init function
 	rc = fprintf(out_fp, 
-		"\n\n}\n\n");
+		"\n}\n\n");
 	if(rc < 0){
 		printf("e: failed to write to %s", output_file);
 		return rc;

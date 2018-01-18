@@ -1,10 +1,13 @@
 
+WIDTH=1280
+HEIGHT=720
+
 all: images
 	gcc src/main.c -Wall -pedantic -std=gnu11 -Iinclude/ -Iimg/ -o main -lSDL2
 
 images: tools
 	for FILE in $(shell find img/ | grep "\.pov"); do \
-		tools/concoord -d img/ $$FILE; \
+		tools/concoord -d img/ -h $(HEIGHT) $$FILE; \
 	done
 
 tools: concoord
