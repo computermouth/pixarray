@@ -37,7 +37,7 @@ int main(int argc, char *argv[]){
 	memcpy(copy_path, full_path, 4097 * sizeof(char));
 	
 	if (filepath != NULL){
-		printf("input found: %s\n", filepath);
+		printf("opening: %s\n", filepath);
 	} else {
 		printf("e: unable to locate file: %s\n", argv[1]);
 		return 1;
@@ -72,14 +72,14 @@ int main(int argc, char *argv[]){
 	strcat(output_file, filename);
 	
 	// open input file
-	FILE *fp = NULL;
+	FILE *in_fp = NULL;
 	char *line = NULL;
 	size_t len = 0;
 	ssize_t read;
 	ww_polygon_t ** polys = NULL;
 	
-	fp = fopen(copy_path,"r");
-	if(fp == NULL){
+	in_fp = fopen(copy_path,"r");
+	if(in_fp == NULL){
 		printf("e: couldn't open file %s\n", copy_path);
 		return 1;
 	}
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]){
 	int point_index = 0;
 	unsigned int line_index = 0;
 	
-	while ( (read = getline(&line, &len, fp)) != -1 ) {
+	while ( (read = getline(&line, &len, in_fp)) != -1 ) {
 		line_index++;
 		
 		// get number of shapes
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]){
 			found = strstr(line, needle);
 			if(found != NULL){
 				num_shapes = atoi(line + 17);
-				printf("polygons in file: %d\n", num_shapes);
+				//~ printf("polygons in file: %d\n", num_shapes);
 				
 				polys = calloc(num_shapes, sizeof(ww_polygon_t *));
 				for(int i = 0; i < num_shapes; i++)
@@ -131,7 +131,7 @@ int main(int argc, char *argv[]){
 				polys[shape_index]->name = calloc(strlen(name) + 1, sizeof(char));
 				strcpy(polys[shape_index]->name, name);
 				
-				printf("name: %s\n", name);
+				//~ printf("name: %s\n", name);
 				
 				stage = Find_Points;
 			}
@@ -153,7 +153,7 @@ int main(int argc, char *argv[]){
 				polys[shape_index]->x = calloc(polys[shape_index]->count, sizeof(short));
 				polys[shape_index]->y = calloc(polys[shape_index]->count, sizeof(short));
 				
-				printf("points: %d\n", polys[shape_index]->count);
+				//~ printf("points: %d\n", polys[shape_index]->count);
 				
 				stage = Parse_Points;
 			}
@@ -221,7 +221,7 @@ int main(int argc, char *argv[]){
 			if(found == NULL)
 				continue;
 				
-			printf("line[%d]: %s", line_index, line);
+			//~ printf("line[%d]: %s", line_index, line);
 			
 			//~ char * dup_line = NULL;
 			//~ dup_line = calloc(len, sizeof(char));
@@ -241,13 +241,13 @@ int main(int argc, char *argv[]){
 			token = strtok(delim_pos+1, ",");
 			
 			// set color[r]
-			printf("token0: %s\n", token);
+			//~ printf("token0: %s\n", token);
 			polys[shape_index]->color[0] = (int)(atof(token) * 255);
 			token = strtok(NULL, ",");
-			printf("token1: %s\n", token);
+			//~ printf("token1: %s\n", token);
 			polys[shape_index]->color[1] = (int)(atof(token) * 255);
 			token = strtok(NULL, ",");
-			printf("token2: %s\n", token);
+			//~ printf("token2: %s\n", token);
 			polys[shape_index]->color[2] = (int)(atof(token) * 255);
 			
 			//~ printf("c[0]: %d\nc[1]: %d\nc[2]: %d\n",
@@ -267,7 +267,143 @@ int main(int argc, char *argv[]){
 		
 	}
 	
-	printf("at frees\n");
+	printf("writing out to: %s\n", output_file);
+	
+	// create new file
+	FILE *out_fp = NULL;
+		
+	out_fp = fopen(output_file,"w+");
+	if(out_fp == NULL){
+		printf("e: couldn't open file %s\n", output_file);
+		return 1;
+	}
+	
+	int rc = 0;
+	// write shapes out to header
+	rc = fprintf(out_fp, "\n#include\"ww.h\"\n\n#ifndef TEST_SHAPES_H\n#define TEST_SHAPES_H\n\n");
+	if(rc < 0){
+		printf("e: failed to write to %s", output_file);
+		return rc;
+	}
+	
+	// get filename without extension
+	period[0] = '\0';
+	char * frame_name = filename;
+	
+	// write externs and declarations
+	for(int i = 0; i < num_shapes; i++){
+		rc = fprintf(out_fp, 
+			"extern ww_polygon_t * %s_%s;\nww_polygon_t * %s_%s = NULL;\n", 
+			frame_name, polys[i]->name, 
+			frame_name, polys[i]->name);
+		if(rc < 0){
+			printf("e: failed to write to %s", output_file);
+			return rc;
+		}
+	}
+	
+	// start init function
+	rc = fprintf(out_fp, "\n\nvoid init_%s(){\n\n", frame_name);
+	if(rc < 0){
+		printf("e: failed to write to %s", output_file);
+		return rc;
+	}
+	
+	// write out polygons
+	for(int i = 0; i < num_shapes; i++){
+		
+		// color
+		rc = fprintf(out_fp, 
+			"\tww_rgba_t %s_%s_color = { %d, %d, %d };\n",
+			frame_name, polys[i]->name, 
+			polys[i]->color[0], polys[i]->color[1], polys[i]->color[2]);
+		if(rc < 0){
+			printf("e: failed to write to %s", output_file);
+			return rc;
+		}
+		
+		// x begin
+		rc = fprintf(out_fp, 
+			"\tshort %s_%s_x[%d] = {", 
+			frame_name, polys[i]->name, polys[i]->count );
+		if(rc < 0){
+			printf("e: failed to write to %s", output_file);
+			return rc;
+		}
+		// x content
+		for(int j = 0; j < polys[i]->count; j++){
+			rc = fprintf(out_fp, 
+				" %d,", 
+				polys[i]->x[j] );
+			if(rc < 0){
+				printf("e: failed to write to %s", output_file);
+				return rc;
+			}
+		}
+		// x end
+		rc = fprintf(out_fp, 
+			"};\n");
+		if(rc < 0){
+			printf("e: failed to write to %s", output_file);
+			return rc;
+		}
+		
+		// y begin
+		rc = fprintf(out_fp, 
+			"\tshort %s_%s_y[%d] = {", 
+			frame_name, polys[i]->name, polys[i]->count );
+		if(rc < 0){
+			printf("e: failed to write to %s", output_file);
+			return rc;
+		}
+		// y content
+		for(int j = 0; j < polys[i]->count; j++){
+			rc = fprintf(out_fp, 
+				" %d,", 
+				polys[i]->y[j] );
+			if(rc < 0){
+				printf("e: failed to write to %s", output_file);
+				return rc;
+			}
+		}
+		// y end
+		rc = fprintf(out_fp, 
+			"};\n");
+		if(rc < 0){
+			printf("e: failed to write to %s", output_file);
+			return rc;
+		}
+		
+		// new_polygon
+		rc = fprintf(out_fp, 
+			"\t%s_%s = ww_new_polygon(%s_%s_color, %s_%s_x, %s_%s_y, %d);\n\n",
+			frame_name, polys[i]->name, 
+			frame_name, polys[i]->name,
+			frame_name, polys[i]->name,
+			frame_name, polys[i]->name,
+			polys[i]->count);
+		if(rc < 0){
+			printf("e: failed to write to %s", output_file);
+			return rc;
+		}
+		
+	}
+	
+	// end init function
+	rc = fprintf(out_fp, 
+		"\n\n}\n\n");
+	if(rc < 0){
+		printf("e: failed to write to %s", output_file);
+		return rc;
+	}
+	
+	// end file
+	rc = fprintf(out_fp, 
+		"#endif\n");
+	if(rc < 0){
+		printf("e: failed to write to %s", output_file);
+		return rc;
+	}
 	
 	for(int i = 0; i < num_shapes; i++){
 		free(polys[i]->name);
@@ -277,7 +413,8 @@ int main(int argc, char *argv[]){
 	}
 	
 	free(polys);
-	fclose(fp);
+	fclose(in_fp);
+	fclose(out_fp);
 	if ( line !=NULL )
 		free(line);
 	

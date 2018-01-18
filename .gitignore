@@ -2,3 +2,4 @@ main
 concoord
 *.gch
 *.o
+img/**/*.h
