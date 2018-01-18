@@ -23,9 +23,9 @@ typedef enum {
 
 int main(int argc, char *argv[]){
 	
-	if (argc != 2){
+	if (argc != 4){
 		printf("%s usage: \n", argv[0]);
-		printf("\t%s [file]\n", argv[0]);
+		printf("\t%s -d [output dir] [file]\n", argv[0]);
 		return 1;
 	}
 	
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]){
 	char full_path[4097];
 	char copy_path[4097];
 	char *filepath = NULL;
-	filepath = realpath(argv[1], full_path);
+	filepath = realpath(argv[3], full_path);
 	memcpy(copy_path, full_path, 4097 * sizeof(char));
 	
 	if (filepath != NULL){
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]){
 	// get output file name
 	char output_file[4097];
 	output_file[0] = '\0';
-	strcat(output_file, directory);
+	strcat(output_file, argv[2]);
 	strcat(output_file, slash);
 	strcat(output_file, filename);
 	
@@ -280,7 +280,7 @@ int main(int argc, char *argv[]){
 	
 	int rc = 0;
 	// write shapes out to header
-	rc = fprintf(out_fp, "\n#include\"ww.h\"\n\n#ifndef TEST_SHAPES_H\n#define TEST_SHAPES_H\n\n");
+	rc = fprintf(out_fp, "\n#include \"ww.h\"\n\n#ifndef TEST_SHAPES_H\n#define TEST_SHAPES_H\n\n");
 	if(rc < 0){
 		printf("e: failed to write to %s", output_file);
 		return rc;

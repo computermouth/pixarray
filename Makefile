@@ -4,10 +4,7 @@ all: images
 
 images: tools
 	for FILE in $(shell find img/ | grep "\.pov"); do \
-		tools/concoord $$FILE; \
-	done
-	for FILE in $(shell find img/ | grep "\.h"); do \
-		echo $$FILE $(shell mv $$FILE img/); \
+		tools/concoord -d img/ $$FILE; \
 	done
 
 tools: concoord
