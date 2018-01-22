@@ -4,6 +4,7 @@
 #include "ww.h"
 #include "test_shapes.h"
 #include "owl_anim.h"
+#include "mario_sprite.h"
 
 int main( void ) {
 	
