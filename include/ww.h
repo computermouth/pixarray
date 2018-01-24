@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <wchar.h>
 
 #include <SDL2/SDL.h>
 
@@ -111,14 +112,14 @@ int ww_window_create(char* title, int width, int height) {
 								SDL_WINDOWPOS_CENTERED,
 								SDL_WINDOWPOS_CENTERED,
 								width, height, 
-								SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE |
-								SDL_RENDERER_PRESENTVSYNC );
+								SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE );
 	
 	if(!window_p->ww_sdl_window) {
 		printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
 		return -1;
 	}
-	window_p->ww_sdl_renderer = SDL_CreateRenderer( window_p->ww_sdl_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC ); //SDL_RENDERER_SOFTWARE
+	window_p->ww_sdl_renderer = SDL_CreateRenderer( window_p->ww_sdl_window, -1, 
+		SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC ); //SDL_RENDERER_SOFTWARE
 	
 	if(!window_p->ww_sdl_renderer) {
 		printf( "Renderer could not be created! SDL_Error: %s\n", SDL_GetError() );
@@ -361,18 +362,21 @@ int ww_window_received_quit_event() {
 	return window_p->ww_received_quit_event;
 }
 
-void ww_draw_pixel( uint32_t x, uint32_t y, void * value ){
+// DEAD CODE
+void ww_draw_pixel( uint32_t x, uint32_t y, unsigned char color[3] ){
 	ww_window_s *window_p = (ww_window_s*) window;
 	
-	memcpy(buffer + (((window_p->ww_width * y) + x ) * 4), value, 3);
+	memcpy(buffer + (((window_p->ww_width * y) + x ) * 4), color, 3);
+	
 }
 
-void ww_draw_pixel_range( uint32_t x, uint32_t y, void * value, size_t size){
+// DEAD CODE
+void ww_draw_pixel_range( uint32_t x, uint32_t y, unsigned char color[3], size_t size){
 	for (uint32_t i = 0; i < size; i++)
-		ww_draw_pixel( x + i, y, value);
+		ww_draw_pixel( x + i, y, color);
 }
 
-void ww_draw_hline( int32_t x1, int32_t x2, int32_t y, void * value){
+static inline void ww_draw_hline( int32_t x1, int32_t x2, int32_t y, unsigned char color[3]){
 	ww_window_s *window_p = (ww_window_s*) window;
 	
 	if( x1 < 0 )
@@ -383,7 +387,8 @@ void ww_draw_hline( int32_t x1, int32_t x2, int32_t y, void * value){
 		return;
 	}
 	
-	ww_draw_pixel_range( x1, y, value, ( x2 - x1 ) );
+	wchar_t * fake_wchar = (wchar_t *)color;
+	wmemset( (wchar_t *)(buffer + (((window_p->ww_width * y) + x1 ) * 4)), *fake_wchar, x2 - x1 );
 	
 }
 
@@ -392,7 +397,7 @@ int _gfxPrimitivesCompareInt(const void *a, const void *b)
 	return (*(const int *) a) - (*(const int *) b);
 }
 
-int ww_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, void * color)
+int ww_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, unsigned char color[3])
 {
 	int result;
 	int i;
