@@ -112,6 +112,6 @@ void test_shapes_init(){
 	
 	// anim
 	int delay[] = { 0 , 60, 120 , 60 };
-	tripenta = ww_new_animation(0, delay, tri012, tri345, tri6789, pentaocta, NULL);
+	tripenta = ww_new_animation(delay, tri012, tri345, tri6789, pentaocta, NULL);
 	
 }

@@ -54,11 +54,17 @@ typedef struct {
 typedef struct {
 	ww_frame_t ** frames;
 	int *delay;
-	int active_frame;
 	int d_progress;
-	int z_depth;
+	int active_frame;
 	int count;
 } ww_animation_t;
+
+typedef struct {
+	ww_animation_t ** animations;
+	int active_animation;
+	int z_depth;
+	int count;
+} ww_sprite_t;
 
 typedef struct{
 	unsigned char esc;
@@ -424,7 +430,7 @@ int ww_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, unsigned ch
 	}
 	
 	result = 0;
-	for (y = miny; (y <= maxy); y++) {
+	for (y = miny; y <= maxy; y++) {
 		ints = 0;
 		for (i = 0; (i < n); i++) {
 			if (!i) {
@@ -594,7 +600,7 @@ ww_frame_t * ww_new_frame(ww_polygon_t * polys, ...){
 	
 }
 
-ww_animation_t * ww_new_animation(int depth, int * delay, ww_frame_t * frames, ...){
+ww_animation_t * ww_new_animation(int * delay, ww_frame_t * frames, ...){
 	
 	ww_animation_t * anim = NULL;
 	
@@ -623,7 +629,6 @@ ww_animation_t * ww_new_animation(int depth, int * delay, ww_frame_t * frames, .
 	anim->delay = calloc(anim->count, sizeof(int));
 	memcpy(anim->delay, delay, anim->count*sizeof(int));
 	anim->d_progress = anim->delay[0];
-	anim->z_depth = depth;
 	
 	int i = 1;
 	tmp = frames;
@@ -642,6 +647,53 @@ ww_animation_t * ww_new_animation(int depth, int * delay, ww_frame_t * frames, .
 	va_end(args);
 	
 	return anim;
+}
+
+ww_sprite_t * ww_new_sprite(int depth, ww_animation_t * animations, ...){
+	
+	ww_sprite_t * sprite = NULL;
+	
+	if(animations == NULL){
+		printf("ww_new_animation called with only NULL argument");
+		return NULL;
+	}
+	
+	sprite = calloc(1, sizeof(ww_sprite_t));
+	
+	// count items
+	va_list args;
+	ww_animation_t * tmp = animations;
+	
+	va_start(args, animations);
+	while( tmp != NULL ){
+		sprite->count += 1;
+		tmp = va_arg(args, ww_animation_t *);
+	}
+	va_end(args);
+	
+	// alloc
+	sprite->animations = calloc(sprite->count, sizeof(ww_animation_t *));
+	
+	// assign
+	sprite->z_depth = depth;
+	
+	int i = 1;
+	tmp = animations;
+	sprite->animations[0] = animations;
+	va_start(args, animations);
+	
+	while( 1 ){
+		tmp = va_arg(args, ww_animation_t *);
+		
+		if(tmp == NULL)
+			break;
+		
+		sprite->animations[i] = tmp;
+		i++;
+	}
+	va_end(args);
+	
+	return sprite;
 }
 
 void ww_free_polygon(ww_polygon_t * poly){
@@ -672,6 +724,17 @@ void ww_free_anim(ww_animation_t * anim){
 	free(anim->delay);
 	free(anim->frames);
 	free(anim);
+	
+}
+
+void ww_free_sprite(ww_sprite_t * sprite){
+	
+	for(int i = 0; i < sprite->count; i++){
+		ww_free_anim( sprite->animations[i] );
+	}
+	
+	free(sprite->animations);
+	free(sprite);
 	
 }
 

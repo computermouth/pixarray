@@ -13,6 +13,6 @@ void init_owl_anim(){
 	init_owl2();
 	
 	int delay[] = {5, 5, 5};
-	owl = ww_new_animation(0, delay, owl0_frame, owl1_frame, owl2_frame, NULL );
+	owl = ww_new_animation( delay, owl0_frame, owl1_frame, owl2_frame, NULL );
 	
 }

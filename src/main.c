@@ -15,6 +15,7 @@ int main( void ) {
 	
 	test_shapes_init();
 	init_owl_anim();
+	init_mario_sprite();
 	
 	while(!ww_window_received_quit_event()) {
 		
@@ -25,10 +26,12 @@ int main( void ) {
 		
 		ww_window_update_events();
 		ww_window_update_buffer();
+		
 	}
 	
 	ww_free_anim(tripenta);
 	ww_free_anim(owl);
+	ww_free_sprite(mario);
 		
 	ww_window_destroy();
 	return 0;
