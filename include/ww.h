@@ -38,8 +38,10 @@ typedef struct {
 	short *x;
 	short *y;
 	float ratio;
-	int pad_x;
-	int pad_y;
+	int w_pad_x;
+	int w_pad_y;
+	int u_pad_x;
+	int u_pad_y;
 	short *scaled_x;
 	short *scaled_y;
 	int z_depth;
@@ -61,6 +63,8 @@ typedef struct {
 
 typedef struct {
 	ww_animation_t ** animations;
+	int pad_x;
+	int pad_y;
 	int active_animation;
 	int z_depth;
 	int count;
@@ -476,20 +480,24 @@ int ww_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, unsigned ch
 	return (result);
 }
 
+void ww_pad_polygon(){
+	copy sprite padding to polygons
+}
+
 void ww_scale_polygon(ww_polygon_t * poly){
 	ww_window_s *window_p = (ww_window_s*) window;
 	
 	if( poly->ratio != window_p->ww_ratio || 
-		poly->pad_x != window_p->ww_pad_x ||
-		poly->pad_y != window_p->ww_pad_y){
+		poly->w_pad_x != window_p->ww_pad_x ||
+		poly->w_pad_y != window_p->ww_pad_y){
 		
 		poly->ratio = window_p->ww_ratio;
-		poly->pad_x = window_p->ww_pad_x;
-		poly->pad_y = window_p->ww_pad_y;
+		poly->w_pad_x = window_p->ww_pad_x;
+		poly->w_pad_y = window_p->ww_pad_y;
 		
 		for(int i = 0; i < poly->count; i++){
-			poly->scaled_x[i] = (poly->x[i] ) * poly->ratio + poly->pad_x;
-			poly->scaled_y[i] = (poly->y[i] ) * poly->ratio + poly->pad_y;
+			poly->scaled_x[i] = (poly->x[i] ) * poly->ratio + poly->w_pad_x;
+			poly->scaled_y[i] = (poly->y[i] ) * poly->ratio + poly->w_pad_y;
 		}
 	
 	}
@@ -531,6 +539,16 @@ int ww_draw_animation(ww_animation_t * anim){
 		anim->active_frame = 0;
 		anim->d_progress = anim->delay[anim->active_frame];
 	}
+	
+	return rc;
+	
+}
+
+int ww_draw_sprite(ww_sprite_t * sprite){
+	
+	
+	
+	int rc = ww_draw_animation(sprite->animations[sprite->active_animation]);
 	
 	return rc;
 	
