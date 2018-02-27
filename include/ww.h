@@ -16,7 +16,6 @@ typedef unsigned char ww_rgba_t[3];
 
 typedef struct{
 	SDL_Window* ww_sdl_window;
-	SDL_Surface* ww_sdl_surface;
 	SDL_Renderer* ww_sdl_renderer;
 	SDL_Texture* ww_sdl_texture;
 	int ww_width;
@@ -38,6 +37,7 @@ typedef struct {
 	short *x;
 	short *y;
 	float ratio;
+	void *s_parent;
 	int w_pad_x;
 	int w_pad_y;
 	int u_pad_x;
@@ -65,6 +65,8 @@ typedef struct {
 	ww_animation_t ** animations;
 	int pad_x;
 	int pad_y;
+	int height;
+	int width;
 	int active_animation;
 	int z_depth;
 	int count;
@@ -480,24 +482,27 @@ int ww_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, unsigned ch
 	return (result);
 }
 
-void ww_pad_polygon(){
-	copy sprite padding to polygons
-}
-
 void ww_scale_polygon(ww_polygon_t * poly){
 	ww_window_s *window_p = (ww_window_s*) window;
 	
+	ww_sprite_t * parent = (ww_sprite_t *)(poly->s_parent);
+	
 	if( poly->ratio != window_p->ww_ratio || 
 		poly->w_pad_x != window_p->ww_pad_x ||
-		poly->w_pad_y != window_p->ww_pad_y){
+		poly->w_pad_y != window_p->ww_pad_y ||
+		poly->u_pad_x != parent->pad_x ||
+		poly->u_pad_y != parent->pad_y ){
 		
 		poly->ratio = window_p->ww_ratio;
 		poly->w_pad_x = window_p->ww_pad_x;
 		poly->w_pad_y = window_p->ww_pad_y;
+		poly->u_pad_x = parent->pad_x;
+		poly->u_pad_y = parent->pad_y;
+		
 		
 		for(int i = 0; i < poly->count; i++){
-			poly->scaled_x[i] = (poly->x[i] ) * poly->ratio + poly->w_pad_x;
-			poly->scaled_y[i] = (poly->y[i] ) * poly->ratio + poly->w_pad_y;
+			poly->scaled_x[i] = (poly->x[i] ) * poly->ratio + (poly->w_pad_x + poly->u_pad_x);
+			poly->scaled_y[i] = (poly->y[i] ) * poly->ratio + (poly->w_pad_y + poly->u_pad_y);
 		}
 	
 	}
@@ -530,14 +535,14 @@ int ww_draw_animation(ww_animation_t * anim){
 	
 	if(anim->d_progress == 0){
 		anim->active_frame++;
+		
+		if(anim->active_frame == anim->count)
+			anim->active_frame = 0;
+		
 		anim->d_progress = anim->delay[anim->active_frame];
+		
 	} else {
 		anim->d_progress--;
-	}
-	
-	if(anim->active_frame == anim->count){
-		anim->active_frame = 0;
-		anim->d_progress = anim->delay[anim->active_frame];
 	}
 	
 	return rc;
@@ -545,8 +550,6 @@ int ww_draw_animation(ww_animation_t * anim){
 }
 
 int ww_draw_sprite(ww_sprite_t * sprite){
-	
-	
 	
 	int rc = ww_draw_animation(sprite->animations[sprite->active_animation]);
 	
@@ -710,6 +713,27 @@ ww_sprite_t * ww_new_sprite(int depth, ww_animation_t * animations, ...){
 		i++;
 	}
 	va_end(args);
+	
+	for(int s = 0; s < sprite->count; s++){
+		
+		for(int a = 0; a < sprite->animations[s]->count; a++){
+		
+			for(int f = 0; f < sprite->animations[s]->frames[a]->count; f++){
+			
+				sprite->animations[s]->frames[a]->polys[f]->s_parent = sprite;
+				
+				ww_polygon_t * t_poly = sprite->animations[s]->frames[a]->polys[f];
+				
+				for(int sh = 0; sh < t_poly->count; sh++){
+					if(t_poly->x[sh] > sprite->width)
+						sprite->width = t_poly->x[sh];
+					if(t_poly->y[sh] > sprite->height)
+						sprite->height = t_poly->y[sh];
+				}
+				
+			}	
+		}	
+	}
 	
 	return sprite;
 }
