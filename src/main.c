@@ -28,13 +28,17 @@ int main( void ) {
 		//~ ww_draw_animation(owl);
 		
 		mario->active_animation = 3;
-		mario->pad_x += 2;
+		mario->pad_x += 1;
 		ww_draw_sprite(mario);
 		
 		ww_window_update_events();
 		ww_window_update_buffer();
 		
+		if (mario->pad_x > 1000)
+			goto quit;
 	}
+	
+	quit:
 	
 	ww_free_anim(tripenta);
 	ww_free_anim(owl);
