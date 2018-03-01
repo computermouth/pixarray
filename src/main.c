@@ -6,9 +6,9 @@
 #include "owl_anim.h"
 #include "mario_sprite.h"
 
-int main( void ) {
+int main( int argc, char * argv[] ) {
 	
-	if(ww_window_create("Testing", 1280, 720)) {
+	if(ww_window_create(argc, argv, "Pixarray", 1280, 720)) {
 		printf("Failure\n");
 		return 1;
 	}
