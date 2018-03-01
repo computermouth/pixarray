@@ -56,7 +56,7 @@ void init_mario_run_left_anim(){
 	init_mario_run_left_1();
 	init_mario_run_left_2();
 	
-	int delay[] = { 10, 10, 10 };
+	int delay[] = { 3, 3, 3 };
 	mario_run_left = ww_new_animation(delay,
 		mario_run_left_0_frame, 
 		mario_run_left_1_frame, 
@@ -72,7 +72,7 @@ void init_mario_run_right_anim(){
 	init_mario_run_right_1();
 	init_mario_run_right_2();
 	
-	int delay[] = { 10, 10, 10 };
+	int delay[] = { 3, 3, 3 };
 	mario_run_right = ww_new_animation(delay,
 		mario_run_right_0_frame, 
 		mario_run_right_1_frame, 

@@ -131,7 +131,8 @@ int ww_window_create(char* title, int width, int height) {
 		return -1;
 	}
 	window_p->ww_sdl_renderer = SDL_CreateRenderer( window_p->ww_sdl_window, -1, 
-		SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC ); //SDL_RENDERER_SOFTWARE
+		SDL_RENDERER_ACCELERATED ); //SDL_RENDERER_SOFTWARE
+		//~ SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC ); //SDL_RENDERER_SOFTWARE
 	
 	if(!window_p->ww_sdl_renderer) {
 		printf( "Renderer could not be created! SDL_Error: %s\n", SDL_GetError() );
