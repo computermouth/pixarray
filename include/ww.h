@@ -183,7 +183,7 @@ int ww_window_create(int argc, char * argv[], char * title, int width, int heigh
 	window_p->ww_sdl_window = SDL_CreateWindow( title,
 								SDL_WINDOWPOS_CENTERED,
 								SDL_WINDOWPOS_CENTERED,
-								width, height, 
+								window_p->ww_width, window_p->ww_height, 
 								SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE );
 	
 	if(!window_p->ww_sdl_window) {
