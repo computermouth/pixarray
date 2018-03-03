@@ -173,7 +173,7 @@ int ww_window_create(int argc, char * argv[], char * title, int width, int heigh
 	
 	ww_calc_window();
 	
-	buffer = calloc(width * height * 4, sizeof(char));
+	buffer = calloc(window_p->ww_width * window_p->ww_height * 4, sizeof(char));
 	
 	if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
 		printf( "SDL could not initialize! SDL_Error: %s\n", SDL_GetError() );
