@@ -17,28 +17,21 @@ int main( int argc, char * argv[] ) {
 	init_owl_anim();
 	init_mario_sprite();
 	
-	mario->pad_x = 0;
+	mario->pad_x = -80;
 	mario->pad_y = 595;
 	
 	while(!ww_window_received_quit_event()) {
 		
-		ww_clear_buffer();
-		
-		//~ ww_draw_animation(tripenta);
-		//~ ww_draw_animation(owl);
-		
 		mario->active_animation = 3;
-		mario->pad_x += 1;
+		mario->pad_x += 5;
 		ww_draw_sprite(mario);
 		
 		ww_window_update_events();
 		ww_window_update_buffer();
 		
-		if (mario->pad_x > 1000)
-			goto quit;
+		if (mario->pad_x > 1320)
+			mario->pad_x = -80;
 	}
-	
-	quit:
 	
 	ww_free_anim(tripenta);
 	ww_free_anim(owl);
