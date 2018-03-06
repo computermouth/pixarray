@@ -9,9 +9,11 @@
 int main( int argc, char * argv[] ) {
 	
 	if(ww_window_create(argc, argv, "Pixarray", 1280, 720)) {
-		printf("Failure\n");
+		printf("Closing..\n");
 		return 1;
 	}
+	
+	ww_window_s *window_p = (ww_window_s*) window;
 	
 	test_shapes_init();
 	init_owl_anim();
@@ -21,6 +23,9 @@ int main( int argc, char * argv[] ) {
 	mario->pad_y = 595;
 	
 	while(!ww_window_received_quit_event()) {
+		
+		SDL_SetRenderDrawColor(window_p->ww_sdl_renderer, 255, 255, 255, 255);
+		SDL_RenderDrawLine(window_p->ww_sdl_renderer, 0, 0, 1600, 1600);
 		
 		mario->active_animation = 3;
 		mario->pad_x += 5;

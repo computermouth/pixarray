@@ -13,7 +13,14 @@
 typedef void* ww_window_t;
 typedef unsigned char ww_rgba_t[3];
 
-int size_changed = 0;
+#define	SC_SIXTEENTH .0625
+#define	SC_EIGHTH .125
+#define	SC_QUARTER .25
+#define	SC_HALF .5
+#define	SC_ONE 1.0
+#define	SC_TWO 2.0
+#define	SC_FOUR 4.0
+#define	SC_EIGHT 8.0
 
 typedef struct{
 	SDL_Window* ww_sdl_window;
@@ -26,6 +33,7 @@ typedef struct{
 	int ww_pad_x;
 	int ww_pad_y;
 	float ww_ratio;
+	float ww_scale;
 	int ww_pitch;
 	int ww_received_quit_event;
 	int ww_size_changed;
@@ -39,13 +47,14 @@ typedef struct {
 	short *x;
 	short *y;
 	float ratio;
-	void *s_parent;
-	int w_pad_x;
-	int w_pad_y;
-	int u_pad_x;
-	int u_pad_y;
-	short *scaled_x;
-	short *scaled_y;
+	void *s_parent; // pointer to anim
+	int w_pad_x; // window's pad
+	int w_pad_y; // window's pad
+	int a_pad_x; // animation's pad
+	int a_pad_y; // animation's pad
+	float scale;
+	short *scaled_x; // scale * ((x[i] + a_pad_x) * ratio + w_pad_x)
+	short *scaled_y; // scale * ((y[i] + a_pad_y) * ratio + w_pad_y)
 	int z_depth;
 	int count;
 } ww_polygon_t;
@@ -128,6 +137,19 @@ int ww_calc_window(){
 	return 0;
 }
 
+void ww_help(char * binary){
+	
+	printf("Usage: %s [OPTION]...\n", binary);
+	printf("\n");
+	printf("\t-W, --width\tSet the window's starting width\n");
+	printf("\t\t\t[ 1 - 16000 ]\n");
+	printf("\t-H, --height\tSet the window's starting height\n");
+	printf("\t\t\t[ 1 - 9000 ]\n");
+	printf("\t-S, --height\tSet the window's starting scale\n");
+	printf("\t\t\t[ 1/16 | 1/8 | 1/4 | 1/2 | 1 | 2 | 4 | 8 ]\n");
+	
+}
+
 int ww_window_create(int argc, char * argv[], char * title, int width, int height) {
 		
 	ww_window_s *window_p = ( ww_window_s* ) calloc( 1, sizeof( ww_window_s ) );
@@ -138,33 +160,91 @@ int ww_window_create(int argc, char * argv[], char * title, int width, int heigh
 	window_p->ww_default_width = width;
 	window_p->ww_default_height = height;
 	window_p->ww_ratio = 1.0;
+	window_p->ww_scale = SC_ONE;
 	
 	for(int i = 0; i < argc; i++){
 		
 		if( strcmp(argv[i], "-W") == 0 || strcmp(argv[i], "--width") == 0 ){
 			
-			int t_width = atoi(argv[i + 1]);
-			if( t_width > 0 && t_width < 65535 && argc > (i + 1) ){
-				window_p->ww_width = t_width;
-				i++;
+			if (argc > (i + 1)){
+				int t_width = atoi(argv[i + 1]);
+				if( t_width > 0 && t_width <= 16000 ){
+					window_p->ww_width = t_width;
+					i++;
+				} else {
+					printf("Width setting invalid [ 0 - 16000 ]\n");
+					ww_help(argv[0]);
+					return -1;
+				}
 			} else {
-				printf("Width setting invalid [ 0 - 65535 ]\n");
+				printf("No width provided [ -W 320 ] \n");
+				ww_help(argv[0]);
 				return -1;
 			}
 			
 		} else if( strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--height") == 0 ){
 			
-			int t_height = atoi(argv[i + 1]);
-			if( t_height > 0 && t_height < 65535 && argc > (i + 1) ){
-				window_p->ww_height = t_height;
-				i++;
+			if (argc > (i + 1)){
+				int t_height = atoi(argv[i + 1]);
+				
+				if( t_height > 0 && t_height <= 9000 ){
+					window_p->ww_height = t_height;
+					i++;
+				} else {
+					printf("Height setting invalid [ 0 - 9000 ]\n");
+					ww_help(argv[0]);
+					return -1;
+				}
 			} else {
-				printf("Height setting invalid [ 0 - 65535 ]\n");
+				printf("No height provided [ -H 240 ] \n");
+				ww_help(argv[0]);
 				return -1;
 			}
 			
-		} else
+		} else if( strcmp(argv[i], "-S") == 0 || strcmp(argv[i], "--scale") == 0 ){
+			
+			if (argc > (i + 1)){
+				
+				if( strcmp(argv[i+1], "1/16") == 0)
+					window_p->ww_scale = SC_SIXTEENTH;
+				else if( strcmp(argv[i+1], "1/8") == 0)
+					window_p->ww_scale = SC_EIGHTH;
+				else if( strcmp(argv[i+1], "1/4") == 0)
+					window_p->ww_scale = SC_QUARTER;
+				else if( strcmp(argv[i+1], "1/2") == 0)
+					window_p->ww_scale = SC_HALF;
+				else if( strcmp(argv[i+1], "1") == 0)
+					window_p->ww_scale = SC_ONE;
+				else if( strcmp(argv[i+1], "2") == 0)
+					window_p->ww_scale = SC_TWO;
+				else if( strcmp(argv[i+1], "4") == 0)
+					window_p->ww_scale = SC_FOUR;
+				else if( strcmp(argv[i+1], "8") == 0)
+					window_p->ww_scale = SC_EIGHT;
+				else {
+					printf("Scale setting invalid [ 1/4 ]\n");
+					return -1;
+					ww_help(argv[0]);
+				}
+				
+				i++;
+				
+				// smooth the downscaling
+				if(window_p->ww_scale >= 1.0)
+					SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+				
+			} else {
+				printf("No scale provided [ -S 2 ] \n");
+				return -1;
+				ww_help(argv[0]);
+			}
+			
+		} else if (argc > 0 && i != 0) {
+			ww_help(argv[0]);
+			return -1;
+		} else {
 			continue;
+		}
 		
 	}
 	
@@ -197,7 +277,7 @@ int ww_window_create(int argc, char * argv[], char * title, int width, int heigh
 	window_p->ww_sdl_texture = SDL_CreateTexture( window_p->ww_sdl_renderer,
 		SDL_PIXELFORMAT_BGR888,
 		SDL_TEXTUREACCESS_TARGET,
-		window_p->ww_width, window_p->ww_height );
+		window_p->ww_width * (window_p->ww_scale), window_p->ww_height * (window_p->ww_scale));
 
 	if(!window_p->ww_sdl_texture) {
 		printf( "Screen texture could not be created! SDL_Error: %s\n", SDL_GetError() );
@@ -207,10 +287,6 @@ int ww_window_create(int argc, char * argv[], char * title, int width, int heigh
 	SDL_RenderClear( window_p->ww_sdl_renderer );
 	
 	SDL_SetRenderTarget(window_p->ww_sdl_renderer, window_p->ww_sdl_texture);
-	
-	//~ SDL_RenderClear( window_p->ww_sdl_renderer );
-	
-	//~ SDL_RenderPresent( window_p->ww_sdl_renderer );
 
 	return 0;
 }
@@ -255,7 +331,7 @@ int ww_window_event(SDL_Event *event){
 				window_p->ww_sdl_texture = SDL_CreateTexture( window_p->ww_sdl_renderer,
 					SDL_PIXELFORMAT_BGR888,
 					SDL_TEXTUREACCESS_TARGET,
-					window_p->ww_width, window_p->ww_height );
+					window_p->ww_width * (window_p->ww_scale), window_p->ww_height * (window_p->ww_scale));
 				
 				if(!window_p->ww_sdl_texture) {
 					printf( "Screen texture could not be created! SDL_Error: %s\n", SDL_GetError() );
@@ -503,18 +579,20 @@ void ww_scale_polygon(ww_polygon_t * poly){
 	if( poly->ratio != window_p->ww_ratio || 
 		poly->w_pad_x != window_p->ww_pad_x ||
 		poly->w_pad_y != window_p->ww_pad_y ||
-		poly->u_pad_x != parent->pad_x ||
-		poly->u_pad_y != parent->pad_y ){
+		poly->a_pad_x != parent->pad_x ||
+		poly->a_pad_y != parent->pad_y ||
+		poly->scale != window_p->ww_scale ){
 		
 		poly->ratio = window_p->ww_ratio;
 		poly->w_pad_x = window_p->ww_pad_x;
 		poly->w_pad_y = window_p->ww_pad_y;
-		poly->u_pad_x = parent->pad_x;
-		poly->u_pad_y = parent->pad_y;
+		poly->a_pad_x = parent->pad_x;
+		poly->a_pad_y = parent->pad_y;
+		poly->scale = window_p->ww_scale;
 		
 		for(int i = 0; i < poly->count; i++){
-			poly->scaled_x[i] = (poly->x[i] + poly->u_pad_x) * poly->ratio + poly->w_pad_x;
-			poly->scaled_y[i] = (poly->y[i] + poly->u_pad_y) * poly->ratio + poly->w_pad_y;
+			poly->scaled_x[i] = window_p->ww_scale * ((poly->x[i] + poly->a_pad_x) * poly->ratio + poly->w_pad_x);
+			poly->scaled_y[i] = window_p->ww_scale * ((poly->y[i] + poly->a_pad_y) * poly->ratio + poly->w_pad_y);
 		}
 	
 	}
@@ -800,22 +878,62 @@ void ww_render_bars(){
 	
 	if (window_p->ww_pad_x != 0){
 		// left
-		short bar_ax[4] = { 0, window_p->ww_pad_x, window_p->ww_pad_x, 0 };
-		short bar_ay[4] = { 0, 0, window_p->ww_height, window_p->ww_height };
+		short bar_ax[4] = { 
+			0, 
+			window_p->ww_pad_x * (window_p->ww_scale), 
+			window_p->ww_pad_x * (window_p->ww_scale), 
+			0 
+		};
+		short bar_ay[4] = { 
+			0, 
+			0, 
+			window_p->ww_height * (window_p->ww_scale), 
+			window_p->ww_height * (window_p->ww_scale)
+		};
 		ww_draw_raw_polygon(bar_ax, bar_ay, 4, bar_grey);
 		// right
-		short bar_bx[4] = { window_p->ww_width - window_p->ww_pad_x, window_p->ww_width, window_p->ww_width, window_p->ww_width - window_p->ww_pad_x};
-		short bar_by[4] = { 0, 0, window_p->ww_height, window_p->ww_height };
+		short bar_bx[4] = { 
+			(window_p->ww_width - window_p->ww_pad_x) * (window_p->ww_scale), 
+			(window_p->ww_width) * (window_p->ww_scale),
+			(window_p->ww_width) * (window_p->ww_scale), 
+			(window_p->ww_width - window_p->ww_pad_x) * (window_p->ww_scale)
+		};
+		short bar_by[4] = { 
+			0, 
+			0, 
+			window_p->ww_height * (window_p->ww_scale), 
+			window_p->ww_height * (window_p->ww_scale)
+		};
 		ww_draw_raw_polygon(bar_bx, bar_by, 4, bar_grey);
 		
 	} else {
 		// top
-		short bar_ax[4] = { 0, window_p->ww_width,  window_p->ww_width, 0 };
-		short bar_ay[4] = { 0, 0, window_p->ww_pad_y, window_p->ww_pad_y};
+		short bar_ax[4] = { 
+			0, 
+			window_p->ww_width * (window_p->ww_scale),
+			window_p->ww_width * (window_p->ww_scale),
+			0
+		};
+		short bar_ay[4] = { 
+			0, 
+			0, 
+			window_p->ww_pad_y * (window_p->ww_scale), 
+			window_p->ww_pad_y * (window_p->ww_scale)
+		};
 		ww_draw_raw_polygon(bar_ax, bar_ay, 4, bar_grey);
 		// bottom
-		short bar_bx[4] = { 0, window_p->ww_width, window_p->ww_width, 0 };
-		short bar_by[4] = { window_p->ww_height - window_p->ww_pad_y, window_p->ww_height - window_p->ww_pad_y,  window_p->ww_height,  window_p->ww_height};
+		short bar_bx[4] = { 
+			0, 
+			window_p->ww_width * (window_p->ww_scale), 
+			window_p->ww_width * (window_p->ww_scale),
+			0
+		};
+		short bar_by[4] = {
+			(window_p->ww_height - window_p->ww_pad_y) * (window_p->ww_scale), 
+			(window_p->ww_height - window_p->ww_pad_y) * (window_p->ww_scale), 
+			window_p->ww_height * (window_p->ww_scale),
+			window_p->ww_height * (window_p->ww_scale)
+		};
 		ww_draw_raw_polygon(bar_bx, bar_by, 4, bar_grey);
 		
 	}
@@ -827,7 +945,6 @@ void ww_clear_buffer(){
 	ww_window_s *window_p = (ww_window_s*) window;
 	
 	SDL_SetRenderDrawColor(window_p->ww_sdl_renderer, 0, 0, 0, 255);
-	
 	
 	// clear texture
 	SDL_RenderClear( window_p->ww_sdl_renderer );
@@ -865,7 +982,6 @@ int ww_window_update_buffer() {
 		SDL_RenderPresent( window_p->ww_sdl_renderer );
 		
 		SDL_SetRenderTarget(window_p->ww_sdl_renderer, window_p->ww_sdl_texture);
-		
 	}
 	
 	ww_clear_buffer();
