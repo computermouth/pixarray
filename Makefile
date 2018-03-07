@@ -7,7 +7,7 @@ all: images
 
 images: tools
 	for FILE in $(shell find img/ | grep "\.pov"); do \
-		tools/concoord -d img/ -h $(HEIGHT) $$FILE; \
+		tools/concoord -d img/ -h $(HEIGHT) $$FILE || exit 1 ; \
 	done
 
 tools: concoord
