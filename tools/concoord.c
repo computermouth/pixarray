@@ -91,6 +91,7 @@ int main(int argc, char *argv[]){
 	unsigned int line_index = 0;
 	
 	while ( (read = getline(&line, &len, in_fp)) != -1 ) {
+		
 		line_index++;
 		
 		// get number of shapes
@@ -213,7 +214,8 @@ int main(int argc, char *argv[]){
 		}
 		
 		if(stage == Parse_Color){
-			char * needle = "_COLOR    = ";
+			char needle[4096];
+			sprintf(needle, "%s_COLOR    = ", polys[shape_index]->name);
 			char * found = NULL;
 			
 			found = strstr(line, needle);
@@ -265,6 +267,11 @@ int main(int argc, char *argv[]){
 			continue;
 		}
 		
+	}
+	
+	if (stage == Parse_Color){
+		printf("e: failed to find fill color for one or more shapes\n");
+		return 1;
 	}
 	
 	printf("writing out to: %s\n", output_file);
