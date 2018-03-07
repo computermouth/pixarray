@@ -1,4 +1,6 @@
 
+#ifndef mario_sprite_H
+#define mario_sprite_H
 
 #include "mario_jump_left_0.h"
 
@@ -125,4 +127,4 @@ void init_mario_sprite(){
 	
 }
 
-
+#endif
