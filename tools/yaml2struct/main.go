@@ -9,6 +9,7 @@ import (
 	"strings"
 	"text/template"
 	"github.com/go-playground/colors"
+	//~ "bufio"
 )
 
 type Sprite struct {
@@ -46,12 +47,13 @@ func main() {
 
 	for i := 1; i < len(os.Args); i++ {
 
-		path := os.Args[i]
+		fullpath := os.Args[i]
+		directory := filepath.Dir(fullpath)
 		filename := filepath.Base(os.Args[i])
 
 		s := Sprite{Spritename: strings.TrimSuffix(filename, filepath.Ext(filename))}
 
-		data, err := ioutil.ReadFile(path)
+		data, err := ioutil.ReadFile(fullpath)
 		if err != nil {
 			log.Fatalf("error: %v", err)
 		}
@@ -61,6 +63,7 @@ func main() {
 			log.Fatalf("error: %v", err)
 		}
 		
+		// format color codes
 		for a, anim := range s.Animations {
 			
 			for f, frame := range anim.Frames{
@@ -84,13 +87,25 @@ func main() {
 			}
 			
 		}
-
-		t := template.Must(template.New(filename).Funcs(funcMap).Parse(CTemplate))
-		err = t.Execute(os.Stdout, s)
+		
+		cout := directory + "/" + s.Spritename + ".h"
+		log.Printf(directory)
+		log.Printf(cout)
+		
+		f, err := os.Create(cout)
 		if err != nil {
 			log.Fatalf("error: %v", err)
 		}
+		//~ w := bufio.NewWriter(f)
 
+		t := template.Must(template.New(filename).Funcs(funcMap).Parse(CTemplate))
+		err = t.Execute(f, s)
+		if err != nil {
+			log.Fatalf("error: %v", err)
+		}
+		
+		f.Close()
+		//~ w.Flush()
 	}
 
 }

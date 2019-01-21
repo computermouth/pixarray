@@ -13,7 +13,7 @@ var (
 
 // declare sprite
 extern ww_sprite_t * {{.Spritename}};
-ww_sprite_t * mario = NULL;
+ww_sprite_t * {{.Spritename}} = NULL;
 
 {{range .Animations}}
 	
@@ -27,6 +27,12 @@ ww_sprite_t * mario = NULL;
 		extern ww_frame_t * {{$GSpritename}}_{{$GAnimation}}_{{.Frame}};
 		ww_frame_t * {{$GSpritename}}_{{$GAnimation}}_{{.Frame}} = NULL;
 		
+		
+		{{range .Layers}}
+		extern ww_polygon_t * {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}};
+		ww_polygon_t * {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}} = NULL;
+		{{end}}
+		
 		void init_{{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}(){
 		{{range .Layers}}
 		
@@ -35,39 +41,42 @@ ww_sprite_t * mario = NULL;
 			ww_rgba_t {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}}_color = { {{index .TrueColor 0}}, {{index .TrueColor 1}}, {{index .TrueColor 2}} };
 			short {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}}_x[{{len .X}}] = { {{$lenX := dec (len .X)}}{{range $i, $e := .X}}{{$e}}{{if ne $i $lenX}}, {{end}}{{end}} };
 			short {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}}_y[{{len .Y}}] = { {{$lenY := dec (len .Y)}}{{range $i, $e := .Y}}{{$e}}{{if ne $i $lenY}}, {{end}}{{end}} };
-			{{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}} = ww_new_polygon({{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}}_color, {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}}_x, {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}}_y, {{len .X}})
+			{{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}} = ww_new_polygon({{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}}_color, {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}}_x, {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}}_y, {{len .X}});
 			{{end}}
 			
 		{{end}}
+		
+			{{$GSpritename}}_{{$GAnimation}}_{{.Frame}} = ww_new_frame(
+				{{range .Layers}}{{if .Color}}{{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}},
+				{{end}}{{end}}NULL 
+			);
 		}
 		
 	{{end}}
+	
+	void init_{{$GSpritename}}_{{$GAnimation}}(){
+		{{range .Frames}}init_{{$GSpritename}}_{{$GAnimation}}_{{.Frame}}();
+		{{end}}
+		
+		int delay[] = { {{$lenFrames := dec (len .Frames)}}{{range $i, $e := .Frames}}{{.Delay}}{{if ne $i $lenFrames}}, {{end}}{{end}} };
+	
+		{{$GSpritename}}_{{$GAnimation}} = ww_new_animation(
+			delay,
+			{{range .Frames}}{{$GSpritename}}_{{$GAnimation}}_{{.Frame}},
+			{{end}}NULL 
+		);
+	}
   
 {{end}}
 
-// init frame
-void init_mario_jump_left_0(){
-	// put after {{range .Layers}} corresponding {{end}}
-	mario_jump_left_0_frame = ww_new_frame( mario_jump_left_0_fist1, NULL);
-}
+void init_{{.Spritename}}(){
+	
+	{{range .Animations}}init_{{$GSpritename}}_{{.Animation}}();
+	{{end}}
 
-// init anim
-void init_mario_jump_left_anim(){
-	
-	init_mario_jump_left_0();
-	
-	int delay[] = { 0 };
-	mario_jump_left = ww_new_animation( delay, mario_jump_left_0_frame, NULL);
-	
-}
-
-void init_mario_sprite(){
-	
-	init_mario_jump_left_anim();
-
-	mario = ww_new_sprite( 0,
-		mario_jump_left,
-		NULL
+	{{.Spritename}} = ww_new_sprite( 0,
+		{{range .Animations}}{{$GSpritename}}_{{.Animation}},
+		{{end}}NULL
 	);
 	
 }

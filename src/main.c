@@ -6,6 +6,7 @@
 #include "mario_sprite.h"
 #include "loading_sprite.h"
 #include "cat_sprite.h"
+#include "untitled.h"
 
 int main( int argc, char * argv[] ) {
 	
@@ -13,6 +14,8 @@ int main( int argc, char * argv[] ) {
 		printf("Closing..\n");
 		return 1;
 	}
+	
+	init_untitled();
 	
 	init_mario_sprite();
 	init_loading_sprite();
@@ -22,9 +25,15 @@ int main( int argc, char * argv[] ) {
 	mario->pad_y = 595;
 	mario->active_animation = 3;
 	
+	untitled->pad_x = 400;
+	untitled->pad_y = 100;
+	untitled->active_animation = 3;
+	
 	cat->pad_x = 0;
 	cat->pad_y = 0;
 	cat->active_animation = 1;
+	
+	uint8_t untitled_count = 0;
 	
 	while(!ww_window_received_quit_event()) {
 		
@@ -34,6 +43,13 @@ int main( int argc, char * argv[] ) {
 		
 		mario->pad_x += 5;
 		ww_draw_sprite(mario);
+		
+		if (untitled_count == 128){
+			untitled->active_animation++;
+			untitled->active_animation = untitled->active_animation % 4;
+			untitled_count = 0;
+		}
+		ww_draw_sprite(untitled);
 		
 		//~ cat->pad_x += 2;
 		ww_draw_sprite(cat);
@@ -45,6 +61,7 @@ int main( int argc, char * argv[] ) {
 		
 		//~ if (cat->pad_x > 1320)
 			//~ cat->pad_x = -80;
+		untitled_count++;
 	}
 	
 	ww_free_sprite(mario);
