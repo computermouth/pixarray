@@ -1,5 +1,5 @@
 main
-concoord
+concoord/concoord
 *.gch
 *.o
 img/**/*.h

@@ -6,17 +6,10 @@ all: images
 	gcc src/main.c -O3 -Wall -pedantic -std=gnu11 -Iinclude/ -Iimg/ -o main -lSDL2
 
 images: tools
-	for FILE in $(shell find img/ | grep "\.pov"); do \
-		tools/concoord -d img/ -h $(HEIGHT) $$FILE || exit 1 ; \
-	done
+	./concoord/concoord img/*
 
-tools: concoord
-
-concoord:
-	gcc tools/concoord.c -pedantic -std=gnu11 -Wall -o tools/concoord
-
-run:
-	./main
+tools:
+	make -C concoord
 
 memtest:
 	valgrind --track-origins=yes --leak-check=yes ./main
