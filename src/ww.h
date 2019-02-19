@@ -113,6 +113,19 @@ ww_keystate_t keystate = {
 	.rt = 0
 };
 
+ww_keystate_t pressstate = {
+	.esc = 0,
+	.ent = 0,
+	.w = 0,
+	.a = 0,
+	.s = 0,
+	.d = 0,
+	.up = 0,
+	.dn = 0,
+	.lt = 0,
+	.rt = 0
+};
+
 int ww_calc_window(){
 	
 	ww_window_s *window_p = (ww_window_s*) window;
@@ -386,6 +399,9 @@ int ww_window_event(SDL_Event *event){
 
 void ww_key_event(SDL_Event *event){
 	
+	
+	ww_keystate_t old_keystate = keystate;
+	
 	if( event->type == SDL_KEYDOWN ){
 		switch(event->key.keysym.sym){
 			case SDLK_ESCAPE:
@@ -453,6 +469,21 @@ void ww_key_event(SDL_Event *event){
 				break;
 		}
 	}
+	
+	ww_keystate_t newp = { 0 };
+	pressstate = newp;
+	
+	if (old_keystate.esc == 0 && keystate.esc == 1) pressstate.esc = 1;
+	if (old_keystate.ent == 0 && keystate.ent == 1) pressstate.ent = 1;
+	if (old_keystate.w   == 0 && keystate.w   == 1) pressstate.w   = 1;
+	if (old_keystate.a   == 0 && keystate.a   == 1) pressstate.a   = 1;
+	if (old_keystate.s   == 0 && keystate.s   == 1) pressstate.s   = 1;
+	if (old_keystate.d   == 0 && keystate.d   == 1) pressstate.d   = 1;
+	if (old_keystate.up  == 0 && keystate.up  == 1) pressstate.up  = 1;
+	if (old_keystate.dn  == 0 && keystate.dn  == 1) pressstate.dn  = 1;
+	if (old_keystate.lt  == 0 && keystate.lt  == 1) pressstate.lt  = 1;
+	if (old_keystate.rt  == 0 && keystate.rt  == 1) pressstate.rt  = 1;
+	
 }
 
 int ww_window_update_events(){
@@ -476,6 +507,16 @@ int ww_window_update_events(){
 		}
 	}
 	return 0;
+}
+
+void ww_window_send_quit_event() {
+	if(!window) {
+		fprintf( stderr, "Cannot update non-existent window\n" );
+		return;
+	}
+
+	ww_window_s *window_p = (ww_window_s*) window;
+	window_p->ww_received_quit_event = 1;
 }
 
 int ww_window_received_quit_event() {
