@@ -2,45 +2,14 @@
 #include <stdio.h>
 
 #include "ww.h"
+#include "states.h"
+#include "files.h"
+
 #include "untitled.h"
 #include "buttons.h"
 #include "selector.h"
 #include "title.h"
 
-typedef struct {
-	uint32_t volume;
-	uint32_t scale;
-	enum { OPTIONS_MENU_SELECTED_VOLUME, OPTIONS_MENU_SELECTED_SCALE, OPTIONS_MENU_SELECTED_HOME } selected;
-} options_menu_state_t;
-
-typedef struct {
-	uint32_t level;
-	uint32_t max_hp;
-	uint32_t hp;
-	uint32_t speed;
-	uint32_t baseatk;
-	uint32_t basedef;
-	uint32_t atk[4];
-	uint32_t def[4];
-	uint32_t exp[9];
-	uint32_t x_pos;
-	uint32_t y_pos;
-	uint32_t sub_x_pos;
-	uint32_t sub_y_pos;
-} player_t;
-
-typedef struct {
-	uint32_t map[31][31];
-	player_t player;
-	enum {PLAY_STATE_WALK, BATTLE, LEVELUP, WEAPONUP, DEFUP}
-} play_state_t;
-
-typedef struct {
-	enum { TOP_STATE_IDLE, TOP_STATE_PLAY, TOP_STATE_OPTIONS, TOP_STATE_QUIT } top_state;
-	enum { TOP_MENU_SELECTED_PLAY, TOP_MENU_SELECTED_OPTIONS, TOP_MENU_SELECTED_QUIT } top_menu_selected;
-	options_menu_state_t options_menu_state;
-	play_state_t play_state;
-} game_state_t;
 
 game_state_t game_state = { 0 };
 
@@ -116,6 +85,10 @@ void process_state(){
 }
 
 int main( int argc, char * argv[] ) {
+	
+	mwrite(&game_state);
+	mread(&game_state);
+	
 	
 	if(ww_window_create(argc, argv, "Pixarray", 1024, 576)) {
 		printf("Closing..\n");

@@ -3,7 +3,7 @@ WIDTH=1280
 HEIGHT=720
 
 all: images
-	gcc src/main.c -O3 -Wall -pedantic -std=gnu11 -Iimg/ -o main -lSDL2
+	gcc src/*.c -O3 -Wall -pedantic -std=gnu11 -Isrc/ -Iimg/ -o main -lSDL2
 
 images: tools
 	./concoord/concoord img/*.yaml

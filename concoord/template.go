@@ -11,6 +11,8 @@ var (
 #ifndef {{.Spritename}}_SPRITE_H
 #define {{.Spritename}}_SPRITE_H
 
+#include "ww.h"
+
 // declare sprite
 extern ww_sprite_t * {{.Spritename}};
 ww_sprite_t * {{.Spritename}} = NULL;
