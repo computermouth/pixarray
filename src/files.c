@@ -1,26 +1,129 @@
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include "ww.h"
+#include "states.h"
 #include "mpack.h"
 #include "files.h"
 
-typedef struct {
-	// player stuff
-	uint32_t level;
-	uint32_t max_hp;
-	uint32_t hp;
-	uint32_t speed;
-	uint32_t baseatk;
-	uint32_t basedef;
-	uint32_t atk[4];
-	uint32_t def[4];
-	uint32_t exp[9];
-	uint32_t x_pos;
-	uint32_t y_pos;
-	// misc
-	uint32_t volume;
-	uint32_t scale;
-} save_file_t;
+
+char *home_dir = NULL;
+char *local_dir = "/.local";
+char *share_dir = "/share";
+char game_dir[500];
+char game_file[500];
+char tmp_path[500];
+
+int check_dir(char *tp){
+
+	struct stat st = {0};
+	
+	// create
+	if (stat(tp, &st) == -1) {
+#ifdef _WIN32
+		mkdir(tp);
+#else
+		mkdir(tp, 0755);
+#endif
+	}
+	
+	// fail if nonexistent
+	if (stat(tp, &st) == -1) {
+		return 1;
+	}
+	
+	return 0;
+}
+
+int check_file(char *tp, game_state_t * gs){
+
+	struct stat st = {0};
+	
+	int rc = 0;
+	
+	// create
+	if (stat(tp, &st) == -1) {
+		rc += mwrite(gs);
+		if (rc != 0)
+			return rc;
+		
+		rc += mread(gs);
+		if (rc != 0)
+			return rc;
+	}
+	
+	// fail if nonexistent
+	if (stat(tp, &st) == -1) {
+		return 1;
+	}
+	
+	return 0;
+}
+
+int verify_or_create_save(game_state_t * gs){
+
+	ww_window_s *window_p = ( ww_window_s* ) calloc( 1, sizeof( ww_window_s ) );
+	window = (ww_window_t *) window_p;
+	
+	int rc = 0;
+
+
+	home_dir = getenv("HOME");
+
+	memset(game_dir, 0, 500 * sizeof(char));
+	sprintf(game_dir, "/%s", window_p->gamename);
+	memset(game_file, 0, 500 * sizeof(char));
+	sprintf(game_file, "/%s.ich", window_p->gamename);
+
+	// check homedir exists
+	memset(tmp_path, 0, 500 * sizeof(char));
+	sprintf(tmp_path, "%s", home_dir);
+	rc += check_dir(tmp_path);
+	if (rc != 0) {
+		printf("E: Failed to find/create %s\n", tmp_path);
+		return rc;
+	}
+	
+	// check local_dir exists
+	memset(tmp_path, 0, 500 * sizeof(char));
+	sprintf(tmp_path, "%s%s", home_dir, local_dir);
+	rc += check_dir(tmp_path);
+	if (rc != 0) {
+		printf("E: Failed to find/create %s\n", tmp_path);
+		return rc;
+	}
+	
+	// check share_dir exists
+	memset(tmp_path, 0, 500 * sizeof(char));
+	sprintf(tmp_path, "%s%s%s", home_dir, local_dir, share_dir);
+	rc += check_dir(tmp_path);
+	if (rc != 0) {
+		printf("E: Failed to find/create %s\n", tmp_path);
+		return rc;
+	}
+	
+	// check game_dir exists
+	memset(tmp_path, 0, 500 * sizeof(char));
+	sprintf(tmp_path, "%s%s%s%s", home_dir, local_dir, share_dir, game_dir);
+	rc += check_dir(tmp_path);
+	if (rc != 0) {
+		printf("E: Failed to find/create %s\n", tmp_path);
+		return rc;
+	}
+	
+	// check game_file exists
+	memset(tmp_path, 0, 500 * sizeof(char));
+	sprintf(tmp_path, "%s%s%s%s%s", home_dir, local_dir, share_dir, game_dir, game_file);
+	rc += check_file(tmp_path, gs);
+	if (rc != 0) {
+		printf("E: Failed to find/create %s\n", tmp_path);
+		return rc;
+	}
+
+	return rc;
+}
 
 int mwrite(game_state_t * gs){
 	// encode to memory buffer
@@ -73,7 +176,11 @@ int mwrite(game_state_t * gs){
 	
 	// test if file exists
 	FILE *out = NULL;
-	char *outname = "test.mp";
+	
+	memset(tmp_path, 0, 500 * sizeof(char));
+	sprintf(tmp_path, "%s%s%s%s%s", home_dir, local_dir, share_dir, game_dir, game_file);
+	
+	char *outname = tmp_path;
 	
 	if( access(outname, F_OK) != -1) {
 		printf("E: file '%s' already exists\n", outname);
@@ -100,13 +207,17 @@ int mwrite(game_state_t * gs){
 int mread(game_state_t * gs){
 	// parse a file into a node tree
 	mpack_tree_t tree;
-	mpack_tree_init_filename(&tree, "test.mp", 0);
+	
+	memset(tmp_path, 0, 500 * sizeof(char));
+	sprintf(tmp_path, "%s%s%s%s%s", home_dir, local_dir, share_dir, game_dir, game_file);
+	
+	mpack_tree_init_filename(&tree, tmp_path, 0);
 	mpack_tree_parse(&tree);
 	mpack_node_t root = mpack_tree_root(&tree);
 
 	// extract the example data on the msgpack homepage
-	uint32_t version = mpack_node_u32(mpack_node_map_cstr(root, "v"));
-	int array_len = mpack_node_array_length(mpack_node_map_cstr(root, "p"));
+	//~ uint32_t version = mpack_node_u32(mpack_node_map_cstr(root, "v"));
+	//~ int array_len = mpack_node_array_length(mpack_node_map_cstr(root, "p"));
 	
 	mpack_node_t m = mpack_node_array_at(mpack_node_map_cstr(root, "p"), 25);
 	int end_array = mpack_node_u32(m);

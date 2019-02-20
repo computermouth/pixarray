@@ -30,18 +30,18 @@ void frees(){
 void process_top_menu(){
 	
 	// move left
-	if(pressstate.lt){
+	if(press_state.lt){
 		game_state.top_menu_selected--;
-		pressstate.lt = 0;
+		press_state.lt = 0;
 	}
 	// wrap left
 	if(game_state.top_menu_selected == TOP_MENU_SELECTED_PLAY - 1)
 		game_state.top_menu_selected = TOP_MENU_SELECTED_QUIT;
 	
 	// move right
-	if(pressstate.rt){
+	if(press_state.rt){
 		game_state.top_menu_selected++;
-		pressstate.rt = 0;
+		press_state.rt = 0;
 	}
 	// wrap right
 	if(game_state.top_menu_selected > TOP_MENU_SELECTED_QUIT)
@@ -49,7 +49,7 @@ void process_top_menu(){
 	
 	selector->pad_x = 200 * game_state.top_menu_selected;
 	
-	if(pressstate.ent){
+	if(press_state.ent){
 		switch(game_state.top_menu_selected){
 			case TOP_MENU_SELECTED_PLAY:
 				break;
@@ -85,6 +85,12 @@ void process_state(){
 }
 
 int main( int argc, char * argv[] ) {
+	
+	if ( verify_or_create_save(&game_state) != 0 ){
+		printf("E: failed to locate or create save file\n");
+		return 1;
+	}
+		
 	
 	mwrite(&game_state);
 	mread(&game_state);

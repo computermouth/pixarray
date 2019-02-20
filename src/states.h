@@ -3,6 +3,8 @@
 #ifndef _STATES_H_
 #define _STATES_H_
 
+#include <stdint.h>
+
 typedef struct {
 	uint32_t volume;
 	uint32_t scale;
