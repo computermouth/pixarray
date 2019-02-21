@@ -4,12 +4,10 @@
 #include "ww.h"
 #include "states.h"
 #include "files.h"
-
 #include "untitled.h"
 #include "buttons.h"
 #include "selector.h"
 #include "title.h"
-
 
 game_state_t game_state = { 0 };
 
@@ -58,6 +56,9 @@ void process_top_menu(){
 			case TOP_MENU_SELECTED_QUIT:
 				game_state.top_state = TOP_STATE_QUIT;
 				break;
+			default:
+				printf("??\n");
+				break;
 		}
 	}
 	
@@ -86,19 +87,18 @@ void process_state(){
 
 int main( int argc, char * argv[] ) {
 	
-	if ( verify_or_create_save(&game_state) != 0 ){
-		printf("E: failed to locate or create save file\n");
-		return 1;
-	}
-		
-	
-	mwrite(&game_state);
-	mread(&game_state);
-	
-	
 	if(ww_window_create(argc, argv, "Pixarray", 1024, 576)) {
 		printf("Closing..\n");
 		return 1;
+	}
+	
+	if ( verify_or_create_save(&game_state) != 0 ){
+		printf("E: failed to locate or create save file\n");
+		return 1;
+	} else {
+		if ( mload(&game_state) != 0 ){
+			return 1;
+		}
 	}
 	
 	inits();

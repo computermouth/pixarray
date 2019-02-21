@@ -912,6 +912,7 @@ void ww_clear_buffer(){
 }
 
 int ww_window_update_buffer() {
+	
 	if(!window) {
 		return -1;
 	}
