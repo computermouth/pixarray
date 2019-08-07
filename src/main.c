@@ -12,7 +12,7 @@ int main( int argc, char * argv[] ) {
 	
 	while(!ww_window_received_quit_event()) {
 		
-		ww_window_update_events();		
+		ww_window_update_events();
 		ww_window_update_buffer();
 	}
 	
