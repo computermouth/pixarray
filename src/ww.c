@@ -314,7 +314,7 @@ void ww_key_event(SDL_Event *event){
 	
 	ww_keystate_t old_keystate = keystate;
 	
-	if( event->type == SDL_KEYDOWN ){
+	if( event->type == SDL_KEYDOWN && event->key.repeat == 0){
 		switch(event->key.keysym.sym){
 			case SDLK_ESCAPE:
 				keystate.esc = 1;
@@ -347,7 +347,7 @@ void ww_key_event(SDL_Event *event){
 				keystate.d = 1;
 				break;
 		}
-	} else if ( event->type == SDL_KEYUP) {
+	} else if ( event->type == SDL_KEYUP ) {
 		switch(event->key.keysym.sym){
 			case SDLK_ESCAPE:
 				keystate.esc = 0;
@@ -532,20 +532,22 @@ void ww_scale_polygon(ww_polygon_t * poly){
 	if( poly->ratio != window_p->ww_ratio || 
 		poly->w_pad_x != window_p->ww_pad_x ||
 		poly->w_pad_y != window_p->ww_pad_y ||
-		poly->a_pad_x != parent->pad_x ||
-		poly->a_pad_y != parent->pad_y ||
+		poly->s_pad_x != parent->pad_x ||
+		poly->s_pad_y != parent->pad_y ||
+		poly->s_scale != parent->scale ||
 		poly->scale != window_p->ww_scale ){
 		
 		poly->ratio = window_p->ww_ratio;
 		poly->w_pad_x = window_p->ww_pad_x;
 		poly->w_pad_y = window_p->ww_pad_y;
-		poly->a_pad_x = parent->pad_x;
-		poly->a_pad_y = parent->pad_y;
+		poly->s_pad_x = parent->pad_x;
+		poly->s_pad_y = parent->pad_y;
+		poly->s_scale = parent->scale;
 		poly->scale = window_p->ww_scale;
 		
 		for(int i = 0; i < poly->count; i++){
-			poly->scaled_x[i] = window_p->ww_scale * ((poly->x[i] + poly->a_pad_x) * poly->ratio + poly->w_pad_x);
-			poly->scaled_y[i] = window_p->ww_scale * ((poly->y[i] + poly->a_pad_y) * poly->ratio + poly->w_pad_y);
+			poly->scaled_x[i] = poly->scale * ((poly->x[i] * poly->s_scale + poly->s_pad_x) * poly->ratio + poly->w_pad_x);
+			poly->scaled_y[i] = poly->scale * ((poly->y[i] * poly->s_scale + poly->s_pad_y) * poly->ratio + poly->w_pad_y);
 		}
 	
 	}
@@ -740,6 +742,7 @@ ww_sprite_t * ww_new_sprite(int depth, ww_animation_t * animations, ...){
 	
 	// assign
 	sprite->z_depth = depth;
+	sprite->scale = 1.0;
 	
 	int i = 1;
 	tmp = animations;
@@ -779,6 +782,77 @@ ww_sprite_t * ww_new_sprite(int depth, ww_animation_t * animations, ...){
 	}
 	
 	return sprite;
+}
+
+ww_sprite_t * ww_clone_sprite(ww_sprite_t * in_sprite){
+	
+	ww_sprite_t * out_sprite = NULL;
+	
+	if(in_sprite == NULL){
+		printf("ww_clone_sprite called with only NULL argument");
+		return NULL;
+	}
+	
+	out_sprite = calloc(1, sizeof(ww_sprite_t));
+	
+	// assignments
+	*out_sprite = *in_sprite;
+	// alloc
+	out_sprite->animations = NULL;
+	out_sprite->animations = calloc(in_sprite->count, sizeof(ww_animation_t *));
+	
+	for(int i = 0; i < in_sprite->count; i++){
+		
+		out_sprite->animations[i] = calloc(1, sizeof(ww_animation_t));
+		*(out_sprite->animations[i]) = *(in_sprite->animations[i]);
+		
+		out_sprite->animations[i]->delay  = NULL;
+		out_sprite->animations[i]->delay  = calloc(in_sprite->animations[i]->count, sizeof(ww_frame_t *));
+		for(int j = 0; j < out_sprite->animations[i]->count; j++)
+			out_sprite->animations[i]->delay[j] = in_sprite->animations[i]->delay[j];
+		
+		out_sprite->animations[i]->frames = NULL;
+		out_sprite->animations[i]->frames = calloc(in_sprite->animations[i]->count, sizeof(ww_frame_t *));
+		
+		for(int j = 0; j < in_sprite->animations[i]->count; j++){
+			
+			out_sprite->animations[i]->frames[j] = calloc(1, sizeof(ww_frame_t));
+			*out_sprite->animations[i]->frames[j] = *in_sprite->animations[i]->frames[j];
+			out_sprite->animations[i]->frames[j]->polys = NULL;
+			out_sprite->animations[i]->frames[j]->polys = calloc(in_sprite->animations[i]->frames[j]->count, sizeof(ww_polygon_t *));
+			
+			printf("frames\n");
+			
+			for(int k = 0; k < in_sprite->animations[i]->frames[j]->count; k++){
+				
+				out_sprite->animations[i]->frames[j]->polys[k] = calloc(1, sizeof(ww_polygon_t));
+				*out_sprite->animations[i]->frames[j]->polys[k] = *in_sprite->animations[i]->frames[j]->polys[k];
+				out_sprite->animations[i]->frames[j]->polys[k]->x        = NULL;
+				out_sprite->animations[i]->frames[j]->polys[k]->y        = NULL;
+				out_sprite->animations[i]->frames[j]->polys[k]->scaled_x = NULL;
+				out_sprite->animations[i]->frames[j]->polys[k]->scaled_y = NULL;
+				out_sprite->animations[i]->frames[j]->polys[k]->s_parent = out_sprite;
+				out_sprite->animations[i]->frames[j]->polys[k]->x        = calloc(in_sprite->animations[i]->frames[j]->polys[k]->count, sizeof(short));
+				out_sprite->animations[i]->frames[j]->polys[k]->y        = calloc(in_sprite->animations[i]->frames[j]->polys[k]->count, sizeof(short));
+				out_sprite->animations[i]->frames[j]->polys[k]->scaled_x = calloc(in_sprite->animations[i]->frames[j]->polys[k]->count, sizeof(short));
+				out_sprite->animations[i]->frames[j]->polys[k]->scaled_y = calloc(in_sprite->animations[i]->frames[j]->polys[k]->count, sizeof(short));
+				
+				for(int l = 0; l < in_sprite->animations[i]->frames[j]->polys[k]->count; l++){
+					
+					out_sprite->animations[i]->frames[j]->polys[k]->x[l]        = in_sprite->animations[i]->frames[j]->polys[k]->x[l];     
+					out_sprite->animations[i]->frames[j]->polys[k]->y[l]        = in_sprite->animations[i]->frames[j]->polys[k]->y[l];      
+					out_sprite->animations[i]->frames[j]->polys[k]->scaled_x[l] = in_sprite->animations[i]->frames[j]->polys[k]->scaled_x[l];
+					out_sprite->animations[i]->frames[j]->polys[k]->scaled_y[l] = in_sprite->animations[i]->frames[j]->polys[k]->scaled_y[l];
+					
+				}
+				
+			}
+			
+		}
+		
+	}
+	
+	return out_sprite;
 }
 
 void ww_free_polygon(ww_polygon_t * poly){

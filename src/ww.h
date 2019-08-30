@@ -48,14 +48,15 @@ typedef struct {
 	short *x;
 	short *y;
 	float ratio;
-	void *s_parent; // pointer to anim
+	void *s_parent; // pointer to sprite
 	int w_pad_x; // window's pad
 	int w_pad_y; // window's pad
-	int a_pad_x; // animation's pad
-	int a_pad_y; // animation's pad
+	int s_pad_x; // sprite's pad
+	int s_pad_y; // sprite's pad
+	float s_scale; // sprite's scale
 	float scale;
-	short *scaled_x; // scale * ((x[i] + a_pad_x) * ratio + w_pad_x)
-	short *scaled_y; // scale * ((y[i] + a_pad_y) * ratio + w_pad_y)
+	short *scaled_x; // scale * ((x[i] + s_pad_x) * ratio + w_pad_x)
+	short *scaled_y; // scale * ((y[i] + s_pad_y) * ratio + w_pad_y)
 	int z_depth;
 	int count;
 } ww_polygon_t;
@@ -82,6 +83,7 @@ typedef struct {
 	int active_animation;
 	int z_depth;
 	int count;
+	float scale;
 } ww_sprite_t;
 
 typedef struct{
@@ -119,6 +121,7 @@ ww_polygon_t * ww_new_polygon(unsigned char color[3], short * x, short * y, int 
 ww_frame_t * ww_new_frame(ww_polygon_t * polys, ...);
 ww_animation_t * ww_new_animation(int * delay, ww_frame_t * frames, ...);
 ww_sprite_t * ww_new_sprite(int depth, ww_animation_t * animations, ...);
+ww_sprite_t * ww_clone_sprite(ww_sprite_t * in_sprite);
 void ww_free_polygon(ww_polygon_t * poly);
 void ww_free_frame(ww_frame_t * frame);
 void ww_free_anim(ww_animation_t * anim);

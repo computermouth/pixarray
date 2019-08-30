@@ -6,7 +6,8 @@ all: images
 	gcc src/*.c -O2 -Wall -pedantic -std=gnu11 -Isrc/ -Iimg/ -o main -lSDL2
 
 images: tools
-	./concoord/concoord img/*.yaml
+	# uncomment me for images
+	# ./concoord/concoord img/*.yaml
 
 tools:
 	make -C concoord
