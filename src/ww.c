@@ -11,31 +11,40 @@
 #include "ww.h"
 
 ww_window_t window = NULL;
-ww_keystate_t keystate = {
-	.esc = 0,
-	.ent = 0,
-	.w = 0,
-	.a = 0,
-	.s = 0,
-	.d = 0,
-	.up = 0,
-	.dn = 0,
-	.lt = 0,
-	.rt = 0
+
+ww_istate_t istate = {
+	.str  = 0,
+	.sel  = 0,
+	.up   = 0,
+	.dn   = 0,
+	.lt   = 0,
+	.rt   = 0,
+	.a    = 0,
+	.b    = 0,
+	.x    = 0,
+	.y    = 0,
+	.cfrm = 0,
+	.paus = 0,
+	.back = 0
 };
 
-ww_keystate_t press_state = {
-	.esc = 0,
-	.ent = 0,
-	.w = 0,
-	.a = 0,
-	.s = 0,
-	.d = 0,
-	.up = 0,
-	.dn = 0,
-	.lt = 0,
-	.rt = 0
+ww_istate_t ipstate = {
+	.str  = 0,
+	.sel  = 0,
+	.up   = 0,
+	.dn   = 0,
+	.lt   = 0,
+	.rt   = 0,
+	.a    = 0,
+	.b    = 0,
+	.x    = 0,
+	.y    = 0,
+	.cfrm = 0,
+	.paus = 0,
+	.back = 0
 };
+
+SDL_GameController *ctrlr = NULL;
 
 int ww_calc_window(){
 	
@@ -175,7 +184,8 @@ int ww_window_create(int argc, char * argv[], char * title, int width, int heigh
 	
 	ww_calc_window();
 	
-	if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
+	//~ if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_JOYSTICK ) < 0 ) {
+	if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER ) < 0 ) {
 		printf( "SDL could not initialize! SDL_Error: %s\n", SDL_GetError() );
 		return -1;
 	}
@@ -213,6 +223,18 @@ int ww_window_create(int argc, char * argv[], char * title, int width, int heigh
 	
 	SDL_SetRenderTarget(window_p->ww_sdl_renderer, window_p->ww_sdl_texture);
 
+	//Check for joysticks
+	if( SDL_NumJoysticks() > 0 ){
+		//Load joystick
+		SDL_Log("SDL_NumJoysticks(): %d", SDL_NumJoysticks());
+		if(SDL_IsGameController(0)){
+			ctrlr = SDL_GameControllerOpen( 0 );
+			if( ctrlr == NULL )	{
+				printf( "Warning: Unable to open game controller! SDL Error: %s\n", SDL_GetError() );
+			}
+		}
+	}
+
 	return 0;
 }
 
@@ -239,7 +261,7 @@ int ww_window_event(SDL_Event *event){
 	ww_window_s *window_p = (ww_window_s*) window;
 	int rc = 0;
 	
-	const Uint8* currentKeyStates = SDL_GetKeyboardState( NULL );
+	const Uint8* currentistates = SDL_GetKeyboardState( NULL );
 	if( event->type == SDL_WINDOWEVENT )
 	{
 		
@@ -291,8 +313,8 @@ int ww_window_event(SDL_Event *event){
 	}
 	if(event->type == SDL_KEYUP ){
 		if( ((event->key.keysym.sym == SDLK_RETURN) && 
-		((currentKeyStates[SDL_SCANCODE_RALT]) || 
-		(currentKeyStates[SDL_SCANCODE_LALT]))) ){
+		((currentistates[SDL_SCANCODE_RALT]) || 
+		(currentistates[SDL_SCANCODE_LALT]))) ){
 			if( window_p->fs ){
 				SDL_SetWindowFullscreen( window_p->ww_sdl_window, SDL_FALSE );
 				window_p->fs = 0;
@@ -306,95 +328,198 @@ int ww_window_event(SDL_Event *event){
 		}
 	}
 	
+	// consume the RETURN press, so alt+ent doesn't let the .ent perform game logic
+	if(event->type == SDL_KEYDOWN ){
+		if( ((event->key.keysym.sym == SDLK_RETURN) && 
+		((currentistates[SDL_SCANCODE_RALT]) || 
+		(currentistates[SDL_SCANCODE_LALT]))) ){			
+			rc = 1;
+		}
+	}
+	
 	return rc;
 }
 
 void ww_key_event(SDL_Event *event){
 	
-	
-	ww_keystate_t old_keystate = keystate;
+	ww_istate_t old_istate = istate;
 	
 	if( event->type == SDL_KEYDOWN && event->key.repeat == 0){
 		switch(event->key.keysym.sym){
 			case SDLK_ESCAPE:
-				keystate.esc = 1;
+				istate.sel = 1;
+				istate.paus = 1;
+				istate.back = 1;
 				break;
 			case SDLK_RETURN:
-				keystate.ent = 1;
+				istate.str = 1;
+				istate.cfrm = 1;
+				istate.paus = 1;
 				break;
 			case SDLK_UP:
-				keystate.up = 1;
+				istate.y = 1;
 				break;
 			case SDLK_DOWN:
-				keystate.dn = 1;
+				istate.a = 1;
+				istate.cfrm = 1;
 				break;
 			case SDLK_LEFT:
-				keystate.lt = 1;
+				istate.x = 1;
 				break;
 			case SDLK_RIGHT:
-				keystate.rt = 1;
+				istate.b = 1;
+				istate.back = 1;
 				break;
 			case SDLK_w:
-				keystate.w = 1;
+				istate.up = 1;
 				break;
 			case SDLK_a:
-				keystate.a = 1;
+				istate.lt = 1;
 				break;
 			case SDLK_s:
-				keystate.s = 1;
+				istate.dn = 1;
 				break;
 			case SDLK_d:
-				keystate.d = 1;
+				istate.rt = 1;
 				break;
 		}
 	} else if ( event->type == SDL_KEYUP ) {
 		switch(event->key.keysym.sym){
 			case SDLK_ESCAPE:
-				keystate.esc = 0;
+				istate.sel = 0;
+				istate.paus = 0;
+				istate.back = 0;
 				break;
 			case SDLK_RETURN:
-				keystate.ent = 0;
+				istate.str = 0;
+				istate.cfrm = 0;
+				istate.paus = 0;
 				break;
 			case SDLK_UP:
-				keystate.up = 0;
+				istate.y = 0;
 				break;
 			case SDLK_DOWN:
-				keystate.dn = 0;
+				istate.a = 0;
+				istate.cfrm = 0;
 				break;
 			case SDLK_LEFT:
-				keystate.lt = 0;
+				istate.x = 0;
 				break;
 			case SDLK_RIGHT:
-				keystate.rt = 0;
+				istate.b = 0;
+				istate.back = 0;
 				break;
 			case SDLK_w:
-				keystate.w = 0;
+				istate.up = 0;
 				break;
 			case SDLK_a:
-				keystate.a = 0;
+				istate.lt = 0;
 				break;
 			case SDLK_s:
-				keystate.s = 0;
+				istate.dn = 0;
 				break;
 			case SDLK_d:
-				keystate.d = 0;
+				istate.rt = 0;
+				break;
+		}
+	}
+
+	if( event->type == SDL_CONTROLLERBUTTONDOWN){
+		switch(event->cbutton.button){
+			case SDL_CONTROLLER_BUTTON_BACK:
+				istate.sel = 1;
+				istate.paus = 1;
+				istate.back = 1;
+				break;
+			case SDL_CONTROLLER_BUTTON_START:
+				istate.str = 1;
+				istate.cfrm = 1;
+				istate.paus = 1;
+				break;
+			case SDL_CONTROLLER_BUTTON_Y:
+				istate.y = 1;
+				break;
+			case SDL_CONTROLLER_BUTTON_A:
+				istate.a = 1;
+				istate.cfrm = 1;
+				break;
+			case SDL_CONTROLLER_BUTTON_X:
+				istate.x = 1;
+				break;
+			case SDL_CONTROLLER_BUTTON_B:
+				istate.b = 1;
+				istate.back = 1;
+				break;
+			case SDL_CONTROLLER_BUTTON_DPAD_UP:
+				istate.up = 1;
+				break;
+			case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+				istate.dn = 1;
+				break;
+			case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+				istate.lt = 1;
+				break;
+			case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+				istate.rt = 1;
+				break;
+		}
+	} else if( event->type == SDL_CONTROLLERBUTTONUP){
+		switch(event->cbutton.button){
+			case SDL_CONTROLLER_BUTTON_BACK:
+				istate.sel = 0;
+				istate.paus = 0;
+				istate.back = 0;
+				break;
+			case SDL_CONTROLLER_BUTTON_START:
+				istate.str = 0;
+				istate.cfrm = 0;
+				istate.paus = 0;
+				break;
+			case SDL_CONTROLLER_BUTTON_Y:
+				istate.y = 0;
+				break;
+			case SDL_CONTROLLER_BUTTON_A:
+				istate.a = 0;
+				istate.cfrm = 0;
+				break;
+			case SDL_CONTROLLER_BUTTON_X:
+				istate.x = 0;
+				break;
+			case SDL_CONTROLLER_BUTTON_B:
+				istate.b = 0;
+				istate.back = 0;
+				break;
+			case SDL_CONTROLLER_BUTTON_DPAD_UP:
+				istate.up = 0;
+				break;
+			case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+				istate.dn = 0;
+				break;
+			case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+				istate.lt = 0;
+				break;
+			case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+				istate.rt = 0;
 				break;
 		}
 	}
 	
-	ww_keystate_t newp = { 0 };
-	press_state = newp;
+	ww_istate_t newc = { 0 };
+	ipstate = newc;
 	
-	if (old_keystate.esc == 0 && keystate.esc == 1) press_state.esc = 1;
-	if (old_keystate.ent == 0 && keystate.ent == 1) press_state.ent = 1;
-	if (old_keystate.w   == 0 && keystate.w   == 1) press_state.w   = 1;
-	if (old_keystate.a   == 0 && keystate.a   == 1) press_state.a   = 1;
-	if (old_keystate.s   == 0 && keystate.s   == 1) press_state.s   = 1;
-	if (old_keystate.d   == 0 && keystate.d   == 1) press_state.d   = 1;
-	if (old_keystate.up  == 0 && keystate.up  == 1) press_state.up  = 1;
-	if (old_keystate.dn  == 0 && keystate.dn  == 1) press_state.dn  = 1;
-	if (old_keystate.lt  == 0 && keystate.lt  == 1) press_state.lt  = 1;
-	if (old_keystate.rt  == 0 && keystate.rt  == 1) press_state.rt  = 1;
+	if (old_istate.sel  == 0 && istate.sel  == 1) ipstate.sel  = 1;
+	if (old_istate.str  == 0 && istate.str  == 1) ipstate.str  = 1;
+	if (old_istate.up   == 0 && istate.up   == 1) ipstate.up   = 1;
+	if (old_istate.lt   == 0 && istate.lt   == 1) ipstate.lt   = 1;
+	if (old_istate.dn   == 0 && istate.dn   == 1) ipstate.dn   = 1;
+	if (old_istate.rt   == 0 && istate.rt   == 1) ipstate.rt   = 1;
+	if (old_istate.a    == 0 && istate.a    == 1) ipstate.a    = 1;
+	if (old_istate.b    == 0 && istate.b    == 1) ipstate.b    = 1;
+	if (old_istate.x    == 0 && istate.x    == 1) ipstate.x    = 1;
+	if (old_istate.y    == 0 && istate.y    == 1) ipstate.y    = 1;
+	if (old_istate.cfrm == 0 && istate.cfrm == 1) ipstate.cfrm = 1;
+	if (old_istate.paus == 0 && istate.paus == 1) ipstate.paus = 1;
+	if (old_istate.back == 0 && istate.back == 1) ipstate.back = 1;
 	
 }
 

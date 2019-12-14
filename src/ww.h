@@ -87,21 +87,24 @@ typedef struct {
 } ww_sprite_t;
 
 typedef struct{
-	unsigned char esc;
-	unsigned char ent;
-	unsigned char w;
-	unsigned char a;
-	unsigned char s;
-	unsigned char d;
+	unsigned char str;
+	unsigned char sel;
 	unsigned char up;
 	unsigned char dn;
 	unsigned char lt;
 	unsigned char rt;
-} ww_keystate_t;
+	unsigned char a;
+	unsigned char b;
+	unsigned char x;
+	unsigned char y;
+	unsigned char cfrm;
+	unsigned char paus;
+	unsigned char back;
+} ww_istate_t;
 
 extern ww_window_t window;
-extern ww_keystate_t keystate;
-extern ww_keystate_t press_state;
+extern ww_istate_t istate;
+extern ww_istate_t ipstate;
 
 int ww_window_destroy();
 int ww_window_create(int argc, char * argv[], char * title, int width, int height);

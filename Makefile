@@ -7,7 +7,7 @@ all: images
 
 images: tools
 	# uncomment me for images
-	# ./concoord/concoord img/*.yaml
+	./concoord/concoord img/*.yaml
 
 tools:
 	make -C concoord
