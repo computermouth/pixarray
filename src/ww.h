@@ -83,6 +83,7 @@ typedef struct {
 	int active_animation;
 	int z_depth;
 	int count;
+	int paused;
 	float scale;
 } ww_sprite_t;
 
@@ -93,10 +94,10 @@ typedef struct{
 	unsigned char dn;
 	unsigned char lt;
 	unsigned char rt;
-	unsigned char a;
-	unsigned char b;
-	unsigned char x;
-	unsigned char y;
+	unsigned char ba;
+	unsigned char bb;
+	unsigned char bx;
+	unsigned char by;
 	unsigned char cfrm;
 	unsigned char paus;
 	unsigned char back;
@@ -109,6 +110,7 @@ extern ww_istate_t ipstate;
 int ww_window_destroy();
 int ww_window_create(int argc, char * argv[], char * title, int width, int height);
 int ww_window_event(SDL_Event *event);
+void ww_toggle_fs();
 void ww_key_event(SDL_Event *event);
 int ww_window_update_events();
 void ww_window_send_quit_event();
@@ -118,7 +120,7 @@ int ww_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, unsigned ch
 void ww_scale_polygon(ww_polygon_t * poly);
 int ww_draw_polygon(ww_polygon_t * poly);
 int ww_draw_frame(ww_frame_t * frame);
-int ww_draw_animation(ww_animation_t * anim);
+int ww_draw_animation(ww_animation_t * anim, int paused);
 int ww_draw_sprite(ww_sprite_t * sprite);
 ww_polygon_t * ww_new_polygon(unsigned char color[3], short * x, short * y, int count);
 ww_frame_t * ww_new_frame(ww_polygon_t * polys, ...);

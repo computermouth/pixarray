@@ -40,19 +40,22 @@ int main( int argc, char * argv[] ) {
 	
 	while(!ww_window_received_quit_event()) {
 		
-		if(istate.a)
+		
+		ww_window_update_events();
+		
+		if(istate.ba)
 			ba->active_animation=1;
 		else
 			ba->active_animation=0;
-		if(istate.b)
+		if(istate.bb)
 			bb->active_animation=1;
 		else
 			bb->active_animation=0;
-		if(istate.x)
+		if(istate.bx)
 			bx->active_animation=1;
 		else
 			bx->active_animation=0;
-		if(istate.y)
+		if(istate.by)
 			by->active_animation=1;
 		else
 			by->active_animation=0;
@@ -91,9 +94,8 @@ int main( int argc, char * argv[] ) {
 		ww_draw_sprite(right);
 		ww_draw_sprite(sel);
 		ww_draw_sprite(start);
-		ww_draw_sprite(up);	
+		ww_draw_sprite(up);
 		
-		ww_window_update_events();
 		ww_window_update_buffer();
 	}
 	

@@ -19,10 +19,10 @@ ww_istate_t istate = {
 	.dn   = 0,
 	.lt   = 0,
 	.rt   = 0,
-	.a    = 0,
-	.b    = 0,
-	.x    = 0,
-	.y    = 0,
+	.ba    = 0,
+	.bb    = 0,
+	.bx    = 0,
+	.by    = 0,
 	.cfrm = 0,
 	.paus = 0,
 	.back = 0
@@ -35,10 +35,10 @@ ww_istate_t ipstate = {
 	.dn   = 0,
 	.lt   = 0,
 	.rt   = 0,
-	.a    = 0,
-	.b    = 0,
-	.x    = 0,
-	.y    = 0,
+	.ba    = 0,
+	.bb    = 0,
+	.bx    = 0,
+	.by    = 0,
 	.cfrm = 0,
 	.paus = 0,
 	.back = 0
@@ -78,8 +78,9 @@ void ww_help(char * binary){
 	printf("\t\t\t[ 1 - 16000 ]\n");
 	printf("\t-H, --height\tSet the window's starting height\n");
 	printf("\t\t\t[ 1 - 9000 ]\n");
-	printf("\t-S, --height\tSet the window's starting scale\n");
+	printf("\t-S, --scale\tSet the window's starting scale\n");
 	printf("\t\t\t[ 1/16 | 1/8 | 1/4 | 1/2 | 1 | 2 | 4 | 8 ]\n");
+	printf("\t-F, --fullscreen\tStart in fullscreen mode\n");
 	
 }
 
@@ -135,6 +136,9 @@ int ww_window_create(int argc, char * argv[], char * title, int width, int heigh
 				return -1;
 			}
 			
+		} else if( strcmp(argv[i], "-F") == 0 || strcmp(argv[i], "--fullscreen") == 0 ){
+			window_p->fs = 1;
+			
 		} else if( strcmp(argv[i], "-S") == 0 || strcmp(argv[i], "--scale") == 0 ){
 			
 			if (argc > (i + 1)){
@@ -184,17 +188,22 @@ int ww_window_create(int argc, char * argv[], char * title, int width, int heigh
 	
 	ww_calc_window();
 	
-	//~ if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_JOYSTICK ) < 0 ) {
 	if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER ) < 0 ) {
 		printf( "SDL could not initialize! SDL_Error: %s\n", SDL_GetError() );
 		return -1;
 	}
 	
+	uint32_t flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
+	
+	if(window_p->fs){
+		flags = SDL_WINDOW_FULLSCREEN_DESKTOP;
+	}
+		
 	window_p->ww_sdl_window = SDL_CreateWindow( title,
 								SDL_WINDOWPOS_CENTERED,
 								SDL_WINDOWPOS_CENTERED,
 								window_p->ww_width, window_p->ww_height, 
-								SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE );
+								flags);
 	
 	if(!window_p->ww_sdl_window) {
 		printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
@@ -315,15 +324,7 @@ int ww_window_event(SDL_Event *event){
 		if( ((event->key.keysym.sym == SDLK_RETURN) && 
 		((currentistates[SDL_SCANCODE_RALT]) || 
 		(currentistates[SDL_SCANCODE_LALT]))) ){
-			if( window_p->fs ){
-				SDL_SetWindowFullscreen( window_p->ww_sdl_window, SDL_FALSE );
-				window_p->fs = 0;
-			}else{
-				SDL_SetWindowFullscreen( window_p->ww_sdl_window, 
-					SDL_WINDOW_FULLSCREEN_DESKTOP );
-				window_p->fs = 1;
-			}
-			
+			ww_toggle_fs();
 			rc = 1;
 		}
 	}
@@ -340,10 +341,21 @@ int ww_window_event(SDL_Event *event){
 	return rc;
 }
 
+void ww_toggle_fs(){
+	ww_window_s *window_p = (ww_window_s*) window;
+	
+	if( window_p->fs ){
+		SDL_SetWindowFullscreen( window_p->ww_sdl_window, SDL_FALSE );
+		window_p->fs = 0;
+	}else{
+		SDL_SetWindowFullscreen( window_p->ww_sdl_window, 
+			SDL_WINDOW_FULLSCREEN_DESKTOP );
+		window_p->fs = 1;
+	}
+}
+
 void ww_key_event(SDL_Event *event){
-	
-	ww_istate_t old_istate = istate;
-	
+
 	if( event->type == SDL_KEYDOWN && event->key.repeat == 0){
 		switch(event->key.keysym.sym){
 			case SDLK_ESCAPE:
@@ -357,17 +369,17 @@ void ww_key_event(SDL_Event *event){
 				istate.paus = 1;
 				break;
 			case SDLK_UP:
-				istate.y = 1;
+				istate.by = 1;
 				break;
 			case SDLK_DOWN:
-				istate.a = 1;
+				istate.ba = 1;
 				istate.cfrm = 1;
 				break;
 			case SDLK_LEFT:
-				istate.x = 1;
+				istate.bx = 1;
 				break;
 			case SDLK_RIGHT:
-				istate.b = 1;
+				istate.bb = 1;
 				istate.back = 1;
 				break;
 			case SDLK_w:
@@ -396,17 +408,17 @@ void ww_key_event(SDL_Event *event){
 				istate.paus = 0;
 				break;
 			case SDLK_UP:
-				istate.y = 0;
+				istate.by = 0;
 				break;
 			case SDLK_DOWN:
-				istate.a = 0;
+				istate.ba = 0;
 				istate.cfrm = 0;
 				break;
 			case SDLK_LEFT:
-				istate.x = 0;
+				istate.bx = 0;
 				break;
 			case SDLK_RIGHT:
-				istate.b = 0;
+				istate.bb = 0;
 				istate.back = 0;
 				break;
 			case SDLK_w:
@@ -437,17 +449,17 @@ void ww_key_event(SDL_Event *event){
 				istate.paus = 1;
 				break;
 			case SDL_CONTROLLER_BUTTON_Y:
-				istate.y = 1;
+				istate.by = 1;
 				break;
 			case SDL_CONTROLLER_BUTTON_A:
-				istate.a = 1;
+				istate.ba = 1;
 				istate.cfrm = 1;
 				break;
 			case SDL_CONTROLLER_BUTTON_X:
-				istate.x = 1;
+				istate.bx = 1;
 				break;
 			case SDL_CONTROLLER_BUTTON_B:
-				istate.b = 1;
+				istate.bb = 1;
 				istate.back = 1;
 				break;
 			case SDL_CONTROLLER_BUTTON_DPAD_UP:
@@ -476,17 +488,17 @@ void ww_key_event(SDL_Event *event){
 				istate.paus = 0;
 				break;
 			case SDL_CONTROLLER_BUTTON_Y:
-				istate.y = 0;
+				istate.by = 0;
 				break;
 			case SDL_CONTROLLER_BUTTON_A:
-				istate.a = 0;
+				istate.ba = 0;
 				istate.cfrm = 0;
 				break;
 			case SDL_CONTROLLER_BUTTON_X:
-				istate.x = 0;
+				istate.bx = 0;
 				break;
 			case SDL_CONTROLLER_BUTTON_B:
-				istate.b = 0;
+				istate.bb = 0;
 				istate.back = 0;
 				break;
 			case SDL_CONTROLLER_BUTTON_DPAD_UP:
@@ -504,23 +516,6 @@ void ww_key_event(SDL_Event *event){
 		}
 	}
 	
-	ww_istate_t newc = { 0 };
-	ipstate = newc;
-	
-	if (old_istate.sel  == 0 && istate.sel  == 1) ipstate.sel  = 1;
-	if (old_istate.str  == 0 && istate.str  == 1) ipstate.str  = 1;
-	if (old_istate.up   == 0 && istate.up   == 1) ipstate.up   = 1;
-	if (old_istate.lt   == 0 && istate.lt   == 1) ipstate.lt   = 1;
-	if (old_istate.dn   == 0 && istate.dn   == 1) ipstate.dn   = 1;
-	if (old_istate.rt   == 0 && istate.rt   == 1) ipstate.rt   = 1;
-	if (old_istate.a    == 0 && istate.a    == 1) ipstate.a    = 1;
-	if (old_istate.b    == 0 && istate.b    == 1) ipstate.b    = 1;
-	if (old_istate.x    == 0 && istate.x    == 1) ipstate.x    = 1;
-	if (old_istate.y    == 0 && istate.y    == 1) ipstate.y    = 1;
-	if (old_istate.cfrm == 0 && istate.cfrm == 1) ipstate.cfrm = 1;
-	if (old_istate.paus == 0 && istate.paus == 1) ipstate.paus = 1;
-	if (old_istate.back == 0 && istate.back == 1) ipstate.back = 1;
-	
 }
 
 int ww_window_update_events(){
@@ -530,6 +525,10 @@ int ww_window_update_events(){
 	}
 
 	ww_window_s *window_p = (ww_window_s*) window;
+	
+	ww_istate_t old_istate = istate;
+	ww_istate_t newi = { 0 };
+	ipstate = newi;
 
 	SDL_Event event;
 	while(SDL_PollEvent(&event)) {
@@ -542,7 +541,22 @@ int ww_window_update_events(){
 					ww_key_event(&event);
 				break;
 		}
+	
+		if (old_istate.sel  == 0 && istate.sel  == 1){ ipstate.sel  = 1;  }
+		if (old_istate.str  == 0 && istate.str  == 1){ ipstate.str  = 1;  }
+		if (old_istate.up   == 0 && istate.up   == 1){ ipstate.up   = 1;  }
+		if (old_istate.lt   == 0 && istate.lt   == 1){ ipstate.lt   = 1;  }
+		if (old_istate.dn   == 0 && istate.dn   == 1){ ipstate.dn   = 1;  }
+		if (old_istate.rt   == 0 && istate.rt   == 1){ ipstate.rt   = 1;  }
+		if (old_istate.ba   == 0 && istate.ba   == 1){ ipstate.ba   = 1;  }
+		if (old_istate.bb   == 0 && istate.bb   == 1){ ipstate.bb   = 1;  }
+		if (old_istate.bx   == 0 && istate.bx   == 1){ ipstate.bx   = 1;  }
+		if (old_istate.by   == 0 && istate.by   == 1){ ipstate.by   = 1;  }
+		if (old_istate.cfrm == 0 && istate.cfrm == 1){ ipstate.cfrm = 1;  }
+		if (old_istate.paus == 0 && istate.paus == 1){ ipstate.paus = 1;  }
+		if (old_istate.back == 0 && istate.back == 1){ ipstate.back = 1;  }
 	}
+	
 	return 0;
 }
 
@@ -699,11 +713,11 @@ int ww_draw_frame(ww_frame_t * frame){
 	
 }
 
-int ww_draw_animation(ww_animation_t * anim){
+int ww_draw_animation(ww_animation_t * anim, int paused){
 	
 	int rc = ww_draw_frame(anim->frames[anim->active_frame]);
 	
-	if(anim->d_progress == 0){
+	if(anim->d_progress == 0 && paused == 0){
 		anim->active_frame++;
 		
 		if(anim->active_frame == anim->count)
@@ -711,7 +725,7 @@ int ww_draw_animation(ww_animation_t * anim){
 		
 		anim->d_progress = anim->delay[anim->active_frame];
 		
-	} else {
+	} else if (paused == 0){
 		anim->d_progress--;
 	}
 	
@@ -721,7 +735,7 @@ int ww_draw_animation(ww_animation_t * anim){
 
 int ww_draw_sprite(ww_sprite_t * sprite){
 	
-	int rc = ww_draw_animation(sprite->animations[sprite->active_animation]);
+	int rc = ww_draw_animation(sprite->animations[sprite->active_animation], sprite->paused);
 	
 	return rc;
 	
@@ -945,9 +959,7 @@ ww_sprite_t * ww_clone_sprite(ww_sprite_t * in_sprite){
 			*out_sprite->animations[i]->frames[j] = *in_sprite->animations[i]->frames[j];
 			out_sprite->animations[i]->frames[j]->polys = NULL;
 			out_sprite->animations[i]->frames[j]->polys = calloc(in_sprite->animations[i]->frames[j]->count, sizeof(ww_polygon_t *));
-			
-			printf("frames\n");
-			
+						
 			for(int k = 0; k < in_sprite->animations[i]->frames[j]->count; k++){
 				
 				out_sprite->animations[i]->frames[j]->polys[k] = calloc(1, sizeof(ww_polygon_t));
