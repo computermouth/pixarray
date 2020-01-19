@@ -235,7 +235,6 @@ int ww_window_create(int argc, char * argv[], char * title, int width, int heigh
 	//Check for joysticks
 	if( SDL_NumJoysticks() > 0 ){
 		//Load joystick
-		SDL_Log("SDL_NumJoysticks(): %d", SDL_NumJoysticks());
 		if(SDL_IsGameController(0)){
 			ctrlr = SDL_GameControllerOpen( 0 );
 			if( ctrlr == NULL )	{
