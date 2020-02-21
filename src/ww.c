@@ -74,13 +74,17 @@ void ww_help(char * binary){
 	
 	printf("Usage: %s [OPTION]...\n", binary);
 	printf("\n");
-	printf("\t-W, --width\tSet the window's starting width\n");
+	printf("\t-W, --width\tWindow starting width\n");
 	printf("\t\t\t[ 1 - 16000 ]\n");
-	printf("\t-H, --height\tSet the window's starting height\n");
+	printf("\t-H, --height\tWindow starting height\n");
 	printf("\t\t\t[ 1 - 9000 ]\n");
-	printf("\t-S, --scale\tSet the window's starting scale\n");
+	printf("\t-S, --scale\tVector scale (for performance)\n");
 	printf("\t\t\t[ 1/16 | 1/8 | 1/4 | 1/2 | 1 | 2 | 4 | 8 ]\n");
+	printf("\t-B, --bits\tSet bit level for color pallette\n");
+	printf("\t\t\t[ 8 | 12 | 15 | 16 | 24 ]\n");
 	printf("\t-F, --fullscreen\tStart in fullscreen mode\n");
+	printf("\t-N, --no-accel\tDisable hardware acceleration\n");
+	printf("\t-D, --disable-vsync\tDisable hardware vsync\n");
 	
 }
 
@@ -96,6 +100,12 @@ int ww_window_create(int argc, char * argv[], char * title, int width, int heigh
 	window_p->ww_default_height = height;
 	window_p->ww_ratio = 1.0;
 	window_p->ww_scale = SC_ONE;
+	window_p->pf = SDL_PIXELFORMAT_RGB888;
+	window_p->acc = SDL_RENDERER_ACCELERATED;
+	window_p->vsync = SDL_RENDERER_PRESENTVSYNC;
+	window_p->ticks = 0;
+	window_p->framediff = 0.0;
+	window_p->frames = 0;
 	
 	for(int i = 0; i < argc; i++){
 		
@@ -160,7 +170,7 @@ int ww_window_create(int argc, char * argv[], char * title, int width, int heigh
 				else if( strcmp(argv[i+1], "8") == 0)
 					window_p->ww_scale = SC_EIGHT;
 				else {
-					printf("Scale setting invalid [ 1/4 ]\n");
+					printf("Scale setting invalid ie. [ 1/2 ]\n");
 					return -1;
 					ww_help(argv[0]);
 				}
@@ -172,10 +182,44 @@ int ww_window_create(int argc, char * argv[], char * title, int width, int heigh
 					SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 				
 			} else {
-				printf("No scale provided [ -S 2 ] \n");
+				printf("No scale provided ie. [ -S 1/2 ] \n");
 				return -1;
 				ww_help(argv[0]);
 			}
+			
+		} else if( strcmp(argv[i], "-B") == 0 || strcmp(argv[i], "--bits") == 0 ){
+		
+			if (argc > (i + 1)){
+				
+				if( strcmp(argv[i+1], "8") == 0)
+					window_p->pf = SDL_PIXELFORMAT_RGB332;
+				else if( strcmp(argv[i+1], "12") == 0)
+					window_p->pf = SDL_PIXELFORMAT_RGB444;
+				else if( strcmp(argv[i+1], "15") == 0)
+					window_p->pf = SDL_PIXELFORMAT_RGB555;
+				else if( strcmp(argv[i+1], "16") == 0)
+					window_p->pf = SDL_PIXELFORMAT_RGB565;
+				else if( strcmp(argv[i+1], "24") == 0)
+					window_p->pf = SDL_PIXELFORMAT_RGB888;
+				else {
+					printf("Bit setting invalid [ 15 ]\n");
+					return -1;
+					ww_help(argv[0]);
+				}
+				
+				i++;
+				
+			} else {
+				printf("No bit level provided [ -B 8 ] \n");
+				return -1;
+				ww_help(argv[0]);
+			}
+			
+		} else if( strcmp(argv[i], "-N") == 0 || strcmp(argv[i], "--no-accel") == 0 ){
+			window_p->acc = SDL_RENDERER_SOFTWARE;
+			window_p->vsync = 0;
+		} else if( strcmp(argv[i], "-D") == 0 || strcmp(argv[i], "--disable-vsync") == 0 ){
+			window_p->vsync = 0;
 			
 		} else if (argc > 0 && i != 0) {
 			ww_help(argv[0]);
@@ -191,6 +235,11 @@ int ww_window_create(int argc, char * argv[], char * title, int width, int heigh
 	if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER ) < 0 ) {
 		printf( "SDL could not initialize! SDL_Error: %s\n", SDL_GetError() );
 		return -1;
+	}
+
+	int rc = SDL_GameControllerAddMapping("190000006c696e6b6465762064657600,RG350,platform:Linux,x:b3,a:b0,b:b1,y:b2,back:b8,start:b9,dpleft:h0.8,dpdown:h0.4,dpright:h0.2,dpup:h0.1,leftshoulder:b4,lefttrigger:b6,rightshoulder:b5,righttrigger:b7,leftstick:b10,rightstick:b11,leftx:a0,lefty:a1,rightx:a2,righty:a3,");
+	if(rc == -1){
+		SDL_Log( "Couldn't load RG350 controller map! SDL_Error: %s\n", SDL_GetError() );
 	}
 	
 	uint32_t flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
@@ -210,7 +259,7 @@ int ww_window_create(int argc, char * argv[], char * title, int width, int heigh
 		return -1;
 	}
 	window_p->ww_sdl_renderer = SDL_CreateRenderer( window_p->ww_sdl_window, -1,
-		SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC ); //SDL_RENDERER_SOFTWARE
+		window_p->acc | window_p->vsync );
 	
 	
 	if(!window_p->ww_sdl_renderer) {
@@ -219,7 +268,7 @@ int ww_window_create(int argc, char * argv[], char * title, int width, int heigh
 	}
 	
 	window_p->ww_sdl_texture = SDL_CreateTexture( window_p->ww_sdl_renderer,
-		SDL_PIXELFORMAT_BGR888,
+		window_p->pf,
 		SDL_TEXTUREACCESS_TARGET,
 		window_p->ww_width * (window_p->ww_scale), window_p->ww_height * (window_p->ww_scale));
 
@@ -235,6 +284,7 @@ int ww_window_create(int argc, char * argv[], char * title, int width, int heigh
 	//Check for joysticks
 	if( SDL_NumJoysticks() > 0 ){
 		//Load joystick
+	
 		if(SDL_IsGameController(0)){
 			ctrlr = SDL_GameControllerOpen( 0 );
 			if( ctrlr == NULL )	{
@@ -284,7 +334,7 @@ int ww_window_event(SDL_Event *event){
 				if(window_p->ww_sdl_texture) SDL_DestroyTexture( window_p->ww_sdl_texture );
 
 				window_p->ww_sdl_texture = SDL_CreateTexture( window_p->ww_sdl_renderer,
-					SDL_PIXELFORMAT_BGR888,
+					window_p->pf,
 					SDL_TEXTUREACCESS_TARGET,
 					window_p->ww_width * (window_p->ww_scale), window_p->ww_height * (window_p->ww_scale));
 				
@@ -354,7 +404,7 @@ void ww_toggle_fs(){
 }
 
 void ww_key_event(SDL_Event *event){
-
+	
 	if( event->type == SDL_KEYDOWN && event->key.repeat == 0){
 		switch(event->key.keysym.sym){
 			case SDLK_ESCAPE:
@@ -528,7 +578,7 @@ int ww_window_update_events(){
 	ww_istate_t old_istate = istate;
 	ww_istate_t newi = { 0 };
 	ipstate = newi;
-
+	
 	SDL_Event event;
 	while(SDL_PollEvent(&event)) {
 		switch(event.type){
@@ -556,7 +606,35 @@ int ww_window_update_events(){
 		if (old_istate.back == 0 && istate.back == 1){ ipstate.back = 1;  }
 	}
 	
+	unsigned int new_ticks = SDL_GetTicks();
+	
+	// ms since last update
+	unsigned int passed_ms = (new_ticks - window_p->ticks);
+	
+	// frames since last update
+	window_p->frames = passed_ms / 16;
+	
+	// leftovers from last frame, plus new .67s, plus 
+	window_p->framediff += ((float)window_p->frames * .67) + (passed_ms % 16);
+	
+	// how many 16.67's have passed
+	while (window_p->framediff > 16.67){
+		window_p->framediff -= 16.67;
+		window_p->frames++;
+	}
+	
+	//~ printf("nt: %u\n\tleftover: %d\n\t\tpassed: %u\n\t\t\tframes: %d\n\t\t\t\tframediff: %f\n", 
+		//~ new_ticks, 0, passed_ms, window_p->frames, window_p->framediff);
+		
+	window_p->ticks = new_ticks;
+	
 	return 0;
+}
+
+int ww_frames_passed(){
+	ww_window_s *window_p = (ww_window_s*) window;
+	
+	return window_p->frames;
 }
 
 void ww_window_send_quit_event() {
@@ -714,19 +792,23 @@ int ww_draw_frame(ww_frame_t * frame){
 
 int ww_draw_animation(ww_animation_t * anim, int paused){
 	
-	int rc = ww_draw_frame(anim->frames[anim->active_frame]);
-	
-	if(anim->d_progress == 0 && paused == 0){
-		anim->active_frame++;
+	if (paused == 0) {
+		anim->d_progress -= ww_frames_passed();
 		
-		if(anim->active_frame == anim->count)
-			anim->active_frame = 0;
+		while(anim->d_progress <= 0){
+			
+			int old_delay = anim->delay[anim->active_frame];
+			anim->active_frame++;
+			
+			if(anim->active_frame == anim->count)
+				anim->active_frame = 0;
+			
+			anim->d_progress = anim->delay[anim->active_frame] - (anim->d_progress % old_delay);
+		}
 		
-		anim->d_progress = anim->delay[anim->active_frame];
-		
-	} else if (paused == 0){
-		anim->d_progress--;
 	}
+	
+	int rc = ww_draw_frame(anim->frames[anim->active_frame]);
 	
 	return rc;
 	
