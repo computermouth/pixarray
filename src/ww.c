@@ -731,7 +731,6 @@ int ww_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, unsigned ch
 			
 			SDL_SetRenderDrawColor(window_p->ww_sdl_renderer, color[0], color[1], color[2], 255);
 			SDL_RenderDrawLine(window_p->ww_sdl_renderer, xa, y, xb, y);
-			
 		}
 	}
 	
@@ -1233,4 +1232,282 @@ int ww_window_update_buffer() {
 	ww_clear_buffer();
 	
 	return 0;
+}
+
+nn_sprite_t * nn_new_sprite(nn_reference_t payload){
+	
+	size_t sz = (
+		sizeof(nn_sprite_t)
+		+ sizeof(nn_animation_t) * payload.alloc[0]
+		+ sizeof(nn_frame_t)     * payload.alloc[1]
+		+ sizeof(int)            * payload.alloc[1] // delay per frame
+		+ sizeof(nn_polygon_t)   * payload.alloc[2]
+		+ sizeof(short)          * payload.alloc[3] * 4
+	);
+	
+	//~ printf("sizes:\n\tspri: %lu\n\tanim: %lu\n\tfram: %lu\n\tpoly: %lu\n\tint: %lu\n\n",
+		//~ sizeof(nn_sprite_t),
+		//~ sizeof(nn_animation_t),
+		//~ sizeof(nn_frame_t),
+		//~ sizeof(nn_polygon_t),
+		//~ sizeof(short)
+	//~ );
+	
+	nn_sprite_t * s = calloc(1, sz);
+	
+	s->count = payload.alloc[0];
+	s->scale = 1.0;
+	
+	uint8_t * c = (uint8_t *)s + sizeof(nn_sprite_t);
+	
+	//~ printf("s: %p\n", (void *)s);
+	//~ printf("s: %p sz: %x s+sz: %p &s[1]: %p c: %p\n", (void *)s, (unsigned int)sz, (uint8_t *)s + sz, (void *)&s[1], (void *)c);
+	
+	//~ printf("curr: %p targ: %p\n", (void *)c, (void *)&s->animations);
+	
+	s->animations = (void *)c;
+	c += sizeof(nn_animation_t) * payload.alloc[0];
+	
+	int fstride = 0;
+	int pstride = 0;
+	int vstride = 0;
+	int astride = 0;
+	
+	for(int a = 0; a < payload.alloc[0]; a++){
+		// just need the anim index
+		
+		//~ printf("pre-delay -- curr: %p targ: %p\n", (void *)c, (void *)&s->animations[a].frames);
+		s->animations[a].count = payload.frames[fstride];
+		s->animations[a].delay = (void *)c;
+		memcpy(c, payload.delays[a], sizeof(int) * payload.frames[fstride]);
+		c += sizeof(int) * payload.frames[fstride];
+		
+		//~ printf("pre-frame -- curr: %p targ: %p\n", (void *)c, (void *)&s->animations[a].frames);
+		s->animations[a].frames = (void *)c;
+		c += sizeof(nn_frame_t) * payload.frames[fstride];
+		
+		for(int f = 0; f < payload.frames[fstride]; f++){
+			
+			s->animations[a].frames[f].count = payload.polygons[pstride];
+			
+			//~ printf("pre-polys -- curr: %p targ: %p\n", (void *)c, (void *)&s->animations[a].frames[f].polys);
+			s->animations[a].frames[f].polys = (void *)c;
+			c += sizeof(nn_polygon_t) * payload.polygons[pstride];
+			
+			for(int p = 0; p < payload.polygons[pstride]; p++){
+				
+				s->animations[a].frames[f].polys[p].count = payload.vertices[vstride];
+				s->animations[a].frames[f].polys[p].ratio = 1.0;
+				s->animations[a].frames[f].polys[p].s_parent = s;
+				s->animations[a].frames[f].polys[p].s_scale = 1.0;
+				s->animations[a].frames[f].polys[p].scale = 1.0;
+				memcpy(s->animations[a].frames[f].polys[p].color, payload.colors[pstride], sizeof(ww_rgba_t));
+				
+				//~ printf("pre-x     -- curr: %p anim: %d  fram: %d poly: %d xory: x\n", c, a, f, p);
+				s->animations[a].frames[f].polys[p].x = (void *)c;
+				memcpy(c, payload.arrays[astride], sizeof(short) * payload.vertices[vstride]);
+				c += sizeof(short) * payload.vertices[vstride];
+				
+				//~ printf("pre-scalX -- curr: %p anim: %d  fram: %d poly: %d xory: x\n", c, a, f, p);
+				s->animations[a].frames[f].polys[p].scaled_x = (void *)c;
+				memcpy(c, payload.arrays[astride], sizeof(short) * payload.vertices[vstride]);
+				c += sizeof(short) * payload.vertices[vstride];
+				
+				astride++;
+				//~ printf("pre-y     -- curr: %p anim: %d  fram: %d poly: %d xory: y\n", c, a, f, p);
+				s->animations[a].frames[f].polys[p].y = (void *)c;
+				memcpy(c, payload.arrays[astride], sizeof(short) * payload.vertices[vstride]);
+				c += sizeof(short) * payload.vertices[vstride];
+				
+				//~ printf("pre-scalY -- curr: %p anim: %d  fram: %d poly: %d xory: y\n", c, a, f, p);
+				s->animations[a].frames[f].polys[p].scaled_y = (void *)c;
+				memcpy(c, payload.arrays[astride], sizeof(short) * payload.vertices[vstride]);
+				c += sizeof(short) * payload.vertices[vstride];
+				
+				vstride++;
+				astride++;
+				//~ printf("vs: %d as: %d\n", vstride, astride);
+			}
+			pstride++;
+		}
+		fstride++;
+	}
+	
+	//~ printf("curr: %p targ: %p\n", c, NULL);
+	
+	return s;
+	
+}
+
+int nn_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, unsigned char color[3])
+{
+	ww_window_s *window_p = (ww_window_s*) window;
+	
+	int result;
+	int i;
+	int y, xa, xb;
+	int miny, maxy;
+	int x1, y1;
+	int x2, y2;
+	int ind1, ind2;
+	int ints;
+	int *gfxPrimitivesPolyInts = (int *) malloc(sizeof(int) * n);
+	
+	//~ printf("color: %d %d %d\n", color[0], color[1], color[2]);
+	//~ printf("vx[0]: %d\n", vx[0]);
+	
+	if (vx == NULL || vy == NULL || n < 3) {
+		return -1;
+	}
+	
+	miny = vy[0];
+	maxy = vy[0];
+	for (i = 1; (i < n); i++) {
+		if (vy[i] < miny) {
+			miny = vy[i];
+		} else if (vy[i] > maxy) {
+			maxy = vy[i];
+		}
+	}
+	
+	result = 0;
+	for (y = miny; y <= maxy; y++) {
+		ints = 0;
+		for (i = 0; (i < n); i++) {
+			if (!i) {
+				ind1 = n - 1;
+				ind2 = 0;
+			} else {
+				ind1 = i - 1;
+				ind2 = i;
+			}
+			y1 = vy[ind1];
+			y2 = vy[ind2];
+			if (y1 < y2) {
+				x1 = vx[ind1];
+				x2 = vx[ind2];
+			} else if (y1 > y2) {
+				y2 = vy[ind1];
+				y1 = vy[ind2];
+				x2 = vx[ind1];
+				x1 = vx[ind2];
+			} else {
+				continue;
+			}
+			if ( ((y >= y1) && (y < y2)) || ((y == maxy) && (y > y1) && (y <= y2)) ) {
+				gfxPrimitivesPolyInts[ints++] = ((65536 * (y - y1)) / (y2 - y1)) * (x2 - x1) + (65536 * x1);
+			} 	    
+		}
+
+		qsort(gfxPrimitivesPolyInts, ints, sizeof(int), _gfxPrimitivesCompareInt);
+		
+		result = 0;
+
+		for (i = 0; (i < ints); i += 2) {
+			xa = gfxPrimitivesPolyInts[i] + 1;
+			xa = (xa >> 16) + ((xa & 32768) >> 15);
+			xb = gfxPrimitivesPolyInts[i+1] - 1;
+			xb = (xb >> 16) + ((xb & 32768) >> 15);
+			
+			SDL_SetRenderDrawColor(window_p->ww_sdl_renderer, color[0], color[1], color[2], 255);
+			SDL_RenderDrawLine(window_p->ww_sdl_renderer, xa, y, xb, y);
+		}
+	}
+	
+	free(gfxPrimitivesPolyInts);
+	
+	return (result);
+}
+
+
+
+void nn_scale_polygon(nn_polygon_t * poly){
+	//~ printf("scale_p\n");
+	ww_window_s *window_p = (ww_window_s*) window;
+	
+	nn_sprite_t * parent = (nn_sprite_t *)(poly->s_parent);
+	
+	if( poly->ratio   != window_p->ww_ratio || 
+		poly->w_pad_x != window_p->ww_pad_x ||
+		poly->w_pad_y != window_p->ww_pad_y ||
+		poly->s_pad_x != parent->pad_x ||
+		poly->s_pad_y != parent->pad_y ||
+		poly->s_scale != parent->scale ||
+		poly->scale   != window_p->ww_scale ){
+		
+		poly->ratio = window_p->ww_ratio;
+		poly->w_pad_x = window_p->ww_pad_x;
+		poly->w_pad_y = window_p->ww_pad_y;
+		poly->s_pad_x = parent->pad_x;
+		poly->s_pad_y = parent->pad_y;
+		poly->s_scale = parent->scale;
+		poly->scale = window_p->ww_scale;
+		
+		for(int i = 0; i < poly->count; i++){
+			poly->scaled_x[i] = poly->scale * ((poly->x[i] * poly->s_scale + poly->s_pad_x) * poly->ratio + poly->w_pad_x);
+			poly->scaled_y[i] = poly->scale * ((poly->y[i] * poly->s_scale + poly->s_pad_y) * poly->ratio + poly->w_pad_y);
+		}
+	
+	}
+	
+}
+
+int nn_draw_polygon(nn_polygon_t * poly){
+	//~ printf("draw_p\n");
+	
+	//~ printf("dp_pre_poly: %d\n", poly->scaled_x[0]);
+	nn_scale_polygon(poly);
+	//~ printf("dp_pos_poly: %d\n", poly->scaled_x[0]);
+	
+	return nn_draw_raw_polygon(poly->scaled_x, poly->scaled_y, poly->count, poly->color);
+}
+
+int nn_draw_frame(nn_frame_t * frame){
+	//~ printf("draw_f\n");
+	
+	//~ printf("frame: %d\n", frame->polys[0].x[0]);
+	int rc = 0;
+	
+	// TODO implement z-depth sorted draws
+	for(int i = 0; i < frame->count; i++){
+		rc += nn_draw_polygon(&frame->polys[i]);
+	}
+	
+	return rc;
+	
+}
+
+int nn_draw_animation(nn_animation_t * anim, int paused){
+	//~ printf("draw_a\n");
+	
+	//~ printf("anim: %d\n", anim->frames[0].polys[0].x[0]);
+	if (paused == 0) {
+		anim->d_progress -= ww_frames_passed();
+		
+		while(anim->d_progress <= 0){
+			
+			int old_delay = anim->delay[anim->active_frame];
+			anim->active_frame++;
+			
+			if(anim->active_frame == anim->count)
+				anim->active_frame = 0;
+			
+			anim->d_progress = anim->delay[anim->active_frame] - (anim->d_progress % old_delay);
+		}
+		
+	}
+		//~ int rc = 0;
+	int rc = nn_draw_frame(&anim->frames[anim->active_frame]);
+	
+	return rc;
+	
+}
+
+int nn_draw_sprite(nn_sprite_t * sprite){
+	
+	//~ printf("sprite: %d\n", sprite->animations[0].frames[0].polys[0].x[0]);
+	int rc = nn_draw_animation(&sprite->animations[sprite->active_animation], sprite->paused);
+	
+	return rc;
+	
 }

@@ -1,88 +1,110 @@
 package main
 
 var (
-	CTemplate = `
-
+	HTemplate = `
 {{$GSpritename := .Spritename}}
-
-// #ifdef {{.Spritename}}_SPRITE_H
-// #error "{{.Spritename}} already exists"
-// #else
-#ifndef {{.Spritename}}_SPRITE_H
-#define {{.Spritename}}_SPRITE_H
+#ifndef {{toupper .Spritename}}_SPRITE_H
+#define {{toupper .Spritename}}_SPRITE_H
 
 #include "ww.h"
 
-// declare sprite
-extern ww_sprite_t * {{.Spritename}};
-ww_sprite_t * {{.Spritename}} = NULL;
-
-{{range .Animations}}
-	
-	// declare animation {{$GAnimation := .Animation}}
-	extern ww_animation_t * {{$GSpritename}}_{{.Animation}};
-	ww_animation_t * {{$GSpritename}}_{{.Animation}} = NULL;
-	
-	{{range .Frames}}
-		
-		//declare frame {{$GFrame := .Frame}}
-		extern ww_frame_t * {{$GSpritename}}_{{$GAnimation}}_{{.Frame}};
-		ww_frame_t * {{$GSpritename}}_{{$GAnimation}}_{{.Frame}} = NULL;
-		
-		
-		{{range .Layers}}
-		extern ww_polygon_t * {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}};
-		ww_polygon_t * {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}} = NULL;
-		{{end}}
-		
-		void init_{{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}(){
-		{{range .Layers}}
-		
-			{{if .Color}}
-			//declare layer
-			ww_rgba_t {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}}_color = { {{index .TrueColor 0}}, {{index .TrueColor 1}}, {{index .TrueColor 2}} };
-			short {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}}_x[{{len .X}}] = { {{$lenX := dec (len .X)}}{{range $i, $e := .X}}{{$e}}{{if ne $i $lenX}}, {{end}}{{end}} };
-			short {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}}_y[{{len .Y}}] = { {{$lenY := dec (len .Y)}}{{range $i, $e := .Y}}{{$e}}{{if ne $i $lenY}}, {{end}}{{end}} };
-			{{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}} = ww_new_polygon({{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}}_color, {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}}_x, {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}}_y, {{len .X}});
-			{{end}}
-			
-		{{end}}
-		
-			{{$GSpritename}}_{{$GAnimation}}_{{.Frame}} = ww_new_frame(
-				{{range .Layers}}{{if .Color}}{{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{.Layer}},
-				{{end}}{{end}}NULL 
-			);
-		}
-		
-	{{end}}
-	
-	void init_{{$GSpritename}}_{{$GAnimation}}(){
-		{{range .Frames}}init_{{$GSpritename}}_{{$GAnimation}}_{{.Frame}}();
-		{{end}}
-		
-		int delay[] = { {{$lenFrames := dec (len .Frames)}}{{range $i, $e := .Frames}}{{.Delay}}{{if ne $i $lenFrames}}, {{end}}{{end}} };
-	
-		{{$GSpritename}}_{{$GAnimation}} = ww_new_animation(
-			delay,
-			{{range .Frames}}{{$GSpritename}}_{{$GAnimation}}_{{.Frame}},
-			{{end}}NULL 
-		);
-	}
-  
-{{end}}
-
-void init_{{.Spritename}}(){
-	
-	{{range .Animations}}init_{{$GSpritename}}_{{.Animation}}();
-	{{end}}
-
-	{{.Spritename}} = ww_new_sprite( 0,
-		{{range .Animations}}{{$GSpritename}}_{{.Animation}},
-		{{end}}NULL
-	);
-	
-}
+extern nn_reference_t {{toupper .Spritename}};
 
 #endif
+
+`
+	CTemplate = `
+
+{{$GSpritename := toupper .Spritename}}
+
+#include "{{.Spritename}}.h"
+
+#define {{$GSpritename}}_ANIMATION_COUNT {{len .Animations}}
+{{range .Animations}} {{$GAnimation := toupper .Animation}}
+#define   {{$GSpritename}}_{{$GAnimation}}_FRAME_COUNT {{len .Frames}}
+          static int {{$GSpritename}}_{{$GAnimation}}_DELAY[] = { {{$lenFrames := dec (len .Frames)}}{{range $i, $e := .Frames}}{{.Delay}}{{if ne $i $lenFrames}}, {{end}}{{end}} };
+	{{range .Frames}} {{$GFrame := toupper .Frame}}
+#define     {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_POLYGON_COUNT {{truelayers (.Layers)}}
+		{{range .Layers}}
+            {{if .Color}}
+#define     {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{toupper .Layer}}_VERTEX_COUNT {{len .X}}
+			static ww_rgba_t {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{toupper .Layer}}_COLOR = { {{index .TrueColor 0}}, {{index .TrueColor 1}}, {{index .TrueColor 2}} };
+			static short {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{toupper .Layer}}_X[{{len .X}}] = { {{$lenX := dec (len .X)}}{{range $i, $e := .X}}{{$e}}{{if ne $i $lenX}}, {{end}}{{end}} };
+			static short {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{toupper .Layer}}_Y[{{len .Y}}] = { {{$lenY := dec (len .Y)}}{{range $i, $e := .Y}}{{$e}}{{if ne $i $lenY}}, {{end}}{{end}} };
+            {{end}}
+		{{end}}
+	{{end}}
+{{end}}
+
+static int {{$GSpritename}}_ALLOC[] = {
+	/* anim */
+	{{$GSpritename}}_ANIMATION_COUNT,
+	
+	/* fram */ 
+	0
+	{{range .Animations}} {{$GAnimation := toupper .Animation}}
+    + {{$GSpritename}}_{{$GAnimation}}_FRAME_COUNT
+    {{end}},
+	
+	/* layr */
+	0
+	{{range .Animations}} {{$GAnimation := toupper .Animation}} {{range .Frames}} {{$GFrame := toupper .Frame}}
+	+ {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_POLYGON_COUNT
+	{{end}} {{end}},
+	
+	/* vert */
+	0
+	{{range .Animations}} {{$GAnimation := toupper .Animation}} {{range .Frames}} {{$GFrame := toupper .Frame}} {{range .Layers}} {{if .Color}}
+	+ {{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{toupper .Layer}}_VERTEX_COUNT
+	{{end}} {{end}} {{end}} {{end}},
+};
+
+static int {{$GSpritename}}_FRAMES[] = {
+	{{range .Animations}} {{$GAnimation := toupper .Animation}}
+    {{$GSpritename}}_{{$GAnimation}}_FRAME_COUNT,
+    {{end}}
+};
+
+static int * {{$GSpritename}}_DELAYS[] = {
+	{{range .Animations}} {{$GAnimation := toupper .Animation}}
+    {{$GSpritename}}_{{$GAnimation}}_DELAY,
+    {{end}}
+};
+
+static int {{$GSpritename}}_POLYGONS[] = {
+	{{range .Animations}} {{$GAnimation := toupper .Animation}} {{range .Frames}} {{$GFrame := toupper .Frame}}
+	{{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_POLYGON_COUNT,
+	{{end}} {{end}}
+};
+
+static unsigned char * {{$GSpritename}}_COLORS[] = {
+	{{range .Animations}} {{$GAnimation := toupper .Animation}} {{range .Frames}} {{$GFrame := toupper .Frame}} {{range .Layers}} {{if .Color}}
+	{{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{toupper .Layer}}_COLOR,
+	{{end}} {{end}} {{end}} {{end}}
+};
+
+static int {{$GSpritename}}_VERTICES[] = {
+	{{range .Animations}} {{$GAnimation := toupper .Animation}} {{range .Frames}} {{$GFrame := toupper .Frame}} {{range .Layers}} {{if .Color}}
+	{{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{toupper .Layer}}_VERTEX_COUNT,
+	{{end}} {{end}} {{end}} {{end}}
+};
+
+static short * {{$GSpritename}}_ARRAYS[] = {
+	{{range .Animations}} {{$GAnimation := toupper .Animation}} {{range .Frames}} {{$GFrame := toupper .Frame}} {{range .Layers}} {{if .Color}}
+	{{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{toupper .Layer}}_X,
+	{{$GSpritename}}_{{$GAnimation}}_{{$GFrame}}_{{toupper .Layer}}_Y,
+	{{end}} {{end}} {{end}} {{end}}
+};
+
+nn_reference_t {{$GSpritename}} = {
+	.alloc    = {{$GSpritename}}_ALLOC,
+	.frames   = {{$GSpritename}}_FRAMES,
+	.delays   = {{$GSpritename}}_DELAYS,
+	.polygons = {{$GSpritename}}_POLYGONS,
+	.colors   = {{$GSpritename}}_COLORS,
+	.vertices = {{$GSpritename}}_VERTICES,
+	.arrays   = {{$GSpritename}}_ARRAYS
+};
+
 `
 )

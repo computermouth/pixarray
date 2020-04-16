@@ -109,9 +109,71 @@ typedef struct{
 	unsigned char back;
 } ww_istate_t;
 
+typedef struct {
+	unsigned char color[3];
+	short *x;
+	short *y;
+	float ratio;
+	void *s_parent; // pointer to sprite
+	int w_pad_x; // window's pad
+	int w_pad_y; // window's pad
+	int s_pad_x; // sprite's pad
+	int s_pad_y; // sprite's pad
+	float s_scale; // sprite's scale
+	float scale;
+	short *scaled_x; // scale * ((x[i] + s_pad_x) * ratio + w_pad_x)
+	short *scaled_y; // scale * ((y[i] + s_pad_y) * ratio + w_pad_y)
+	int z_depth;
+	int count;
+} nn_polygon_t;
+
+typedef struct {
+	nn_polygon_t * polys;
+	int count;
+} nn_frame_t;
+
+typedef struct {
+	nn_frame_t * frames;
+	int *delay;
+	int d_progress;
+	int active_frame;
+	int count;
+} nn_animation_t;
+
+typedef struct {
+	nn_animation_t * animations;
+	int pad_x;
+	int pad_y;
+	int height;
+	int width;
+	int active_animation;
+	int z_depth;
+	int count;
+	int paused;
+	float scale;
+} nn_sprite_t;
+
+typedef struct {
+	int * alloc;
+	int * frames;
+	int ** delays;
+	int * polygons;
+	unsigned char ** colors;
+	int * vertices;
+	short ** arrays;
+} nn_reference_t;
+
 extern ww_window_t window;
 extern ww_istate_t istate;
 extern ww_istate_t ipstate;
+
+nn_sprite_t * nn_new_sprite(nn_reference_t);
+void nn_scale_polygon(nn_polygon_t * poly);
+int nn_draw_polygon(nn_polygon_t * poly);
+int nn_draw_frame(nn_frame_t * frame);
+int nn_draw_animation(nn_animation_t * anim, int paused);
+int nn_draw_sprite(nn_sprite_t * sprite);
+
 
 int ww_window_destroy();
 int ww_window_create(int argc, char * argv[], char * title, int width, int height);

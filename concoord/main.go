@@ -11,23 +11,25 @@ import (
 	"github.com/go-playground/colors"
 )
 
-type Sprite struct {
+type Layer_t struct {
+	Layer     string `yaml:"layer"`
+	Path      string `yaml:"path,omitempty"`
+	XImage    int    `yaml:"x_image,omitempty"`
+	YImage    int    `yaml:"y_image,omitempty"`
+	Color     string `yaml:"color"`
+	TrueColor [3]uint8
+	X         []int `yaml:"x,omitempty"`
+	Y         []int `yaml:"y,omitempty"`
+}
+
+type Sprite_t struct {
 	Spritename string
 	Animations []struct {
 		Animation string `yaml:"animation"`
 		Frames    []struct {
 			Frame  string `yaml:"frame"`
 			Delay  int    `yaml:"delay"`
-			Layers []struct {
-				Layer     string `yaml:"layer"`
-				Path      string `yaml:"path,omitempty"`
-				XImage    int    `yaml:"x_image,omitempty"`
-				YImage    int    `yaml:"y_image,omitempty"`
-				Color     string `yaml:"color"`
-				TrueColor [3]uint8
-				X         []int `yaml:"x,omitempty"`
-				Y         []int `yaml:"y,omitempty"`
-			} `yaml:"layers"`
+			Layers []Layer_t `yaml:"layers"`
 		} `yaml:"frames"`
 	} `yaml:"animations"`
 }
@@ -38,6 +40,18 @@ func main() {
         "dec": func(i int) int {
             return i - 1
         },
+        "truelayers": func(layers []Layer_t) int {
+			truelayers := 0
+			for i := 0; i < len(layers); i++ {
+				if layers[i].Color != ""{
+					truelayers++
+				}
+			}
+            return truelayers
+        },
+        "toupper": func(s string) string {
+            return strings.ToUpper(s)
+        },
     }
 
 	for i := 1; i < len(os.Args); i++ {
@@ -46,7 +60,7 @@ func main() {
 		directory := filepath.Dir(fullpath)
 		filename := filepath.Base(os.Args[i])
 
-		s := Sprite{Spritename: strings.TrimSuffix(filename, filepath.Ext(filename))}
+		s := Sprite_t{Spritename: strings.TrimSuffix(filename, filepath.Ext(filename))}
 
 		data, err := ioutil.ReadFile(fullpath)
 		if err != nil {
@@ -83,6 +97,7 @@ func main() {
 			
 		}
 		
+		// header
 		cout := directory + "/" + s.Spritename + ".h"
 		log.Printf(directory)
 		log.Printf(cout)
@@ -92,7 +107,23 @@ func main() {
 			log.Fatalf("error: %v", err)
 		}
 
-		t := template.Must(template.New(filename).Funcs(funcMap).Parse(CTemplate))
+		t := template.Must(template.New(filename).Funcs(funcMap).Parse(HTemplate))
+		err = t.Execute(f, s)
+		if err != nil {
+			log.Fatalf("error: %v", err)
+		}
+		
+		// c
+		cout = directory + "/" + s.Spritename + ".c"
+		log.Printf(directory)
+		log.Printf(cout)
+		
+		f, err = os.Create(cout)
+		if err != nil {
+			log.Fatalf("error: %v", err)
+		}
+
+		t = template.Must(template.New(filename).Funcs(funcMap).Parse(CTemplate))
 		err = t.Execute(f, s)
 		if err != nil {
 			log.Fatalf("error: %v", err)
