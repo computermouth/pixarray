@@ -1261,7 +1261,7 @@ nn_sprite_t * nn_new_sprite(nn_reference_t payload){
 	uint8_t * c = (uint8_t *)s + sizeof(nn_sprite_t);
 	
 	//~ printf("s: %p\n", (void *)s);
-	//~ printf("s: %p sz: %x s+sz: %p &s[1]: %p c: %p\n", (void *)s, (unsigned int)sz, (uint8_t *)s + sz, (void *)&s[1], (void *)c);
+	printf("s: %p sz: %x s+sz: %p &s[1]: %p c: %p\n", (void *)s, (unsigned int)sz, (uint8_t *)s + sz, (void *)&s[1], (void *)c);
 	
 	//~ printf("curr: %p targ: %p\n", (void *)c, (void *)&s->animations);
 	
@@ -1339,6 +1339,107 @@ nn_sprite_t * nn_new_sprite(nn_reference_t payload){
 	
 }
 
+nn_sprite_t * nn_clone_sprite(nn_sprite_t * insprite){
+	
+	int ac = insprite->count;
+	int fc = 0;
+	int pc = 0;
+	int vc = 0;
+	//~ printf("0\n");
+	
+	for(int i = 0; i < ac; i++){
+		fc += insprite->animations[i].count;
+		
+		for(int j = 0; j < insprite->animations[i].count; j++){
+			pc += insprite->animations[i].frames[j].count;
+			
+			for(int k = 0; k < insprite->animations[i].frames[j].count; k++){
+				vc += insprite->animations[i].frames[j].polys[k].count;
+			}
+		}
+	}
+	//~ printf("1\n");
+	
+	int alloc[] = { ac, fc, pc, vc };
+	
+	int frames[fc];
+	int * delays[fc];
+	int polygons[pc];
+	unsigned char * colors[pc]; // = malloc(sizeof(char *) * pc);
+	int vertices[vc];
+	short * arrays[vc * 2];
+	//~ printf("2\n");
+	
+	int p_stride = 0;
+	int c_stride = 0;
+	int a_stride = 0;
+	
+	
+	for(int i = 0; i < ac; i++){
+		frames[i] = insprite->animations[i].count;
+		delays[i] = insprite->animations[i].delay;
+		
+		for(int j = 0; j < insprite->animations[i].count; j++){
+			polygons[p_stride] = insprite->animations[i].frames[j].count;
+			p_stride++;
+			
+			for(int k = 0; k < insprite->animations[i].frames[j].count; k++){
+				colors[c_stride] = insprite->animations[i].frames[j].polys[k].color;
+				vertices[c_stride] = insprite->animations[i].frames[j].polys[k].count;
+				c_stride++;
+				
+				arrays[a_stride] = insprite->animations[i].frames[j].polys[k].scaled_x;
+				a_stride++;
+				arrays[a_stride] = insprite->animations[i].frames[j].polys[k].scaled_y;
+				a_stride++;
+			}
+		}
+	}
+	
+				//~ printf("colors[%d][0]: %d\n", 0, colors[0][0]);
+				//~ printf("colors[%d][1]: %d\n", 0, colors[0][1]);
+				//~ printf("colors[%d][2]: %d\n", 0, colors[0][2]);
+				//~ printf("colors[%d][0]: %d\n", 1, colors[1][0]);
+				//~ printf("colors[%d][1]: %d\n", 1, colors[1][1]);
+				//~ printf("colors[%d][2]: %d\n", 1, colors[1][2]);
+	
+	//~ printf("3\n");
+	
+	nn_reference_t clone_payload = {
+		.alloc = alloc,
+		.frames = frames,
+		.delays = delays,
+		.polygons = polygons,
+		.colors = colors,
+		.vertices = vertices,
+		.arrays = arrays,
+	};
+	
+	//~ printf("aanim[0] -- BA: %d\tba:%d\n", BA.alloc[0], alloc[0]);
+	//~ printf("afram[1] -- BA: %d\tba:%d\n", BA.alloc[1], alloc[1]);
+	//~ printf("apoly[2] -- BA: %d\tba:%d\n", BA.alloc[2], alloc[2]);
+	//~ printf("avert[3] -- BA: %d\tba:%d\n", BA.alloc[3], alloc[3]);
+	
+	//~ for(int i = 0; i < alloc[0]; i++)
+		//~ printf("frames[%d] -- BA: %d\tba: %d\n", i, BA.frames[i], frames[i]);
+	//~ for(int i = 0; i < alloc[0]; i++)
+		//~ printf("delays[%d] -- BA: %d\tba: %d\n", i, BA.delays[i][0], delays[i][0]);
+	//~ for(int i = 0; i < alloc[1]; i++)
+		//~ printf("polygs[%d] -- BA: %d\tba: %d\n", i, BA.polygons[i], polygons[0]);
+	//~ for(int i = 0; i < alloc[2]; i++){
+		//~ printf("colors[%d][0] -- BA: %d\tba: %d\n", i, BA.colors[i][0], colors[i][0]);
+		//~ printf("colors[%d][1] -- BA: %d\tba: %d\n", i, BA.colors[i][1], colors[i][1]);
+		//~ printf("colors[%d][2] -- BA: %d\tba: %d\n", i, BA.colors[i][2], colors[i][2]);
+	//~ }
+	
+	nn_sprite_t * s = nn_new_sprite(clone_payload);
+	
+	return s;
+	
+}
+
+//~ int *gfxPrimitivesPolyInts = NULL;
+
 int nn_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, unsigned char color[3])
 {
 	ww_window_s *window_p = (ww_window_s*) window;
@@ -1351,6 +1452,7 @@ int nn_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, unsigned ch
 	int x2, y2;
 	int ind1, ind2;
 	int ints;
+	//~ gfxPrimitivesPolyInts = (int *) realloc(gfxPrimitivesPolyInts, sizeof(int) * n);
 	int *gfxPrimitivesPolyInts = (int *) malloc(sizeof(int) * n);
 	
 	//~ printf("color: %d %d %d\n", color[0], color[1], color[2]);
@@ -1483,6 +1585,7 @@ int nn_draw_animation(nn_animation_t * anim, int paused){
 	//~ printf("anim: %d\n", anim->frames[0].polys[0].x[0]);
 	if (paused == 0) {
 		anim->d_progress -= ww_frames_passed();
+		//~ anim->d_progress--;
 		
 		while(anim->d_progress <= 0){
 			

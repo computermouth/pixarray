@@ -16,6 +16,7 @@
 #include "up.h"
 
 nn_sprite_t * ba         = NULL;
+nn_sprite_t * ba2        = NULL;
 nn_sprite_t * bb         = NULL;
 nn_sprite_t * bx         = NULL;
 nn_sprite_t * by         = NULL;
@@ -29,6 +30,10 @@ nn_sprite_t * up         = NULL;
 
 void inits(){
 	ba         = nn_new_sprite(BA        );
+	
+	ba2 = nn_clone_sprite(ba);
+	free(ba);
+	
 	bb         = nn_new_sprite(BB        );
 	bx         = nn_new_sprite(BX        );
 	by         = nn_new_sprite(BY        );
@@ -47,8 +52,10 @@ int main( int argc, char * argv[] ) {
 		printf("Closing..\n");
 		return 1;
 	}
-	
+		
 	inits();
+	
+	int i = 0;
 		
 	while(!ww_window_received_quit_event()) {
 		
@@ -56,9 +63,9 @@ int main( int argc, char * argv[] ) {
 		ww_window_update_events();
 		
 		if(istate.ba)
-			ba->active_animation=1;
+			ba2->active_animation=1;
 		else
-			ba->active_animation=0;
+			ba2->active_animation=0;
 		if(istate.bb)
 			bb->active_animation=1;
 		else
@@ -97,7 +104,7 @@ int main( int argc, char * argv[] ) {
 			sel->active_animation=0;
 		
 		nn_draw_sprite(controller);
-		nn_draw_sprite(ba        );
+		nn_draw_sprite(ba2       );
 		nn_draw_sprite(bb        );
 		nn_draw_sprite(bx        );
 		nn_draw_sprite(by        );
@@ -109,9 +116,25 @@ int main( int argc, char * argv[] ) {
 		nn_draw_sprite(up        );
 		
 		ww_window_update_buffer();
+		
+		if (i == 100000)
+			ww_window_send_quit_event();
+		
+		i++;
+		
 	}
 	
-	free(ba);
+	free(controller);
+	free(ba2       );
+	free(bb        );
+	free(bx        );
+	free(by        );
+	free(down      );
+	free(left      );
+	free(right     );
+	free(sel       );
+	free(start     );
+	free(up        );
 	
 	ww_window_destroy();
 	return 0;

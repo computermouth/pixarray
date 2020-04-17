@@ -168,6 +168,7 @@ extern ww_istate_t istate;
 extern ww_istate_t ipstate;
 
 nn_sprite_t * nn_new_sprite(nn_reference_t);
+nn_sprite_t * nn_clone_sprite(nn_sprite_t *);
 void nn_scale_polygon(nn_polygon_t * poly);
 int nn_draw_polygon(nn_polygon_t * poly);
 int nn_draw_frame(nn_frame_t * frame);
