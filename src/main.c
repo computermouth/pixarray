@@ -15,35 +15,37 @@
 #include "start.h"
 #include "up.h"
 
-nn_sprite_t * ba         = NULL;
-nn_sprite_t * ba2        = NULL;
-nn_sprite_t * bb         = NULL;
-nn_sprite_t * bx         = NULL;
-nn_sprite_t * by         = NULL;
-nn_sprite_t * controller = NULL;
-nn_sprite_t * down       = NULL;
-nn_sprite_t * left       = NULL;
-nn_sprite_t * right      = NULL;
-nn_sprite_t * sel        = NULL;
-nn_sprite_t * start      = NULL;
-nn_sprite_t * up         = NULL;
+ww_sprite_t * ba         = NULL;
+ww_sprite_t * ba2        = NULL;
+ww_sprite_t * bb         = NULL;
+ww_sprite_t * bx         = NULL;
+ww_sprite_t * by         = NULL;
+ww_sprite_t * controller = NULL;
+ww_sprite_t * down       = NULL;
+ww_sprite_t * left       = NULL;
+ww_sprite_t * right      = NULL;
+ww_sprite_t * sel        = NULL;
+ww_sprite_t * start      = NULL;
+ww_sprite_t * up         = NULL;
 
 void inits(){
-	ba         = nn_new_sprite(BA        );
 	
-	ba2 = nn_clone_sprite(ba);
+	ba         = ww_new_sprite(BA        );
+	
+	ba2 = ww_clone_sprite(ba);
 	free(ba);
 	
-	bb         = nn_new_sprite(BB        );
-	bx         = nn_new_sprite(BX        );
-	by         = nn_new_sprite(BY        );
-	controller = nn_new_sprite(CONTROLLER);
-	down       = nn_new_sprite(DOWN      );
-	left       = nn_new_sprite(LEFT      );
-	right      = nn_new_sprite(RIGHT     );
-	sel        = nn_new_sprite(SEL       );
-	start      = nn_new_sprite(START     );
-	up         = nn_new_sprite(UP        );
+	bb         = ww_new_sprite(BB        );
+	bx         = ww_new_sprite(BX        );
+	by         = ww_new_sprite(BY        );
+	controller = ww_new_sprite(CONTROLLER);
+	down       = ww_new_sprite(DOWN      );
+	left       = ww_new_sprite(LEFT      );
+	right      = ww_new_sprite(RIGHT     );
+	sel        = ww_new_sprite(SEL       );
+	start      = ww_new_sprite(START     );
+	up         = ww_new_sprite(UP        );
+	
 }
 
 int main( int argc, char * argv[] ) {
@@ -103,24 +105,24 @@ int main( int argc, char * argv[] ) {
 		else
 			sel->active_animation=0;
 		
-		nn_draw_sprite(controller);
-		nn_draw_sprite(ba2       );
-		nn_draw_sprite(bb        );
-		nn_draw_sprite(bx        );
-		nn_draw_sprite(by        );
-		nn_draw_sprite(down      );
-		nn_draw_sprite(left      );
-		nn_draw_sprite(right     );
-		nn_draw_sprite(sel       );
-		nn_draw_sprite(start     );
-		nn_draw_sprite(up        );
+		ww_draw_sprite(controller);
+		ww_draw_sprite(ba2       );
+		ww_draw_sprite(bb        );
+		ww_draw_sprite(bx        );
+		ww_draw_sprite(by        );
+		ww_draw_sprite(down      );
+		ww_draw_sprite(left      );
+		ww_draw_sprite(right     );
+		ww_draw_sprite(sel       );
+		ww_draw_sprite(start     );
+		ww_draw_sprite(up        );
 		
 		ww_window_update_buffer();
 		
-		if (i == 100000)
-			ww_window_send_quit_event();
+		//~ if (i == 100000)
+			//~ ww_window_send_quit_event();
 		
-		i++;
+		//~ i++;
 		
 	}
 	

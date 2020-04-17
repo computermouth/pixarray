@@ -8,7 +8,7 @@ var (
 
 #include "ww.h"
 
-extern nn_reference_t {{toupper .Spritename}};
+extern ww_reference_t {{toupper .Spritename}};
 
 #endif
 
@@ -96,7 +96,7 @@ static short * {{$GSpritename}}_ARRAYS[] = {
 	{{end}} {{end}} {{end}} {{end}}
 };
 
-nn_reference_t {{$GSpritename}} = {
+ww_reference_t {{$GSpritename}} = {
 	.alloc    = {{$GSpritename}}_ALLOC,
 	.frames   = {{$GSpritename}}_FRAMES,
 	.delays   = {{$GSpritename}}_DELAYS,
