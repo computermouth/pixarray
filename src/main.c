@@ -31,7 +31,6 @@ ww_sprite_t * up         = NULL;
 void inits(){
 	
 	ba         = ww_new_sprite(BA        );
-	
 	ba2 = ww_clone_sprite(ba);
 	free(ba);
 	
@@ -56,51 +55,49 @@ int main( int argc, char * argv[] ) {
 	}
 		
 	inits();
-	
-	int i = 0;
 		
 	while(!ww_window_received_quit_event()) {
 		
 		
 		ww_window_update_events();
 		
-		if(istate.ba)
+		if(istate.c_a)
 			ba2->active_animation=1;
 		else
 			ba2->active_animation=0;
-		if(istate.bb)
+		if(istate.c_b)
 			bb->active_animation=1;
 		else
 			bb->active_animation=0;
-		if(istate.bx)
+		if(istate.c_x)
 			bx->active_animation=1;
 		else
 			bx->active_animation=0;
-		if(istate.by)
+		if(istate.c_y)
 			by->active_animation=1;
 		else
 			by->active_animation=0;
-		if(istate.up)
+		if(istate.c_up)
 			up->active_animation=1;
 		else
 			up->active_animation=0;
-		if(istate.dn)
+		if(istate.c_dn)
 			down->active_animation=1;
 		else
 			down->active_animation=0;
-		if(istate.lt)
+		if(istate.c_lt)
 			left->active_animation=1;
 		else
 			left->active_animation=0;
-		if(istate.rt)
+		if(istate.c_rt)
 			right->active_animation=1;
 		else
 			right->active_animation=0;
-		if(istate.str)
+		if(istate.c_str)
 			start->active_animation=1;
 		else
 			start->active_animation=0;
-		if(istate.sel)
+		if(istate.c_sel)
 			sel->active_animation=1;
 		else
 			sel->active_animation=0;
@@ -118,11 +115,6 @@ int main( int argc, char * argv[] ) {
 		ww_draw_sprite(up        );
 		
 		ww_window_update_buffer();
-		
-		//~ if (i == 100000)
-			//~ ww_window_send_quit_event();
-		
-		//~ i++;
 		
 	}
 	

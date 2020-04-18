@@ -50,25 +50,57 @@ typedef struct{
 } ww_window_s;
 
 typedef struct{
-	unsigned char str;
-	unsigned char sel;
-	unsigned char up;
-	unsigned char dn;
-	unsigned char lt;
-	unsigned char rt;
-	unsigned char ba;
-	unsigned char bb;
-	unsigned char bx;
-	unsigned char by;
-	unsigned char cfrm;
-	unsigned char paus;
-	unsigned char back;
+	union { // start      || enter
+		char c_str;
+		char k_ent;
+	};
+	union { // select     || escape
+		char c_sel;
+		char k_esc;
+	};
+	union { // dpad up    || W
+		char c_up;
+		char k_w;
+	};
+	union { // dpad down  || S
+		char c_dn;
+		char k_s;
+	};
+	union { // dpad left  || A
+		char c_lt;
+		char k_a;
+	};
+	union { // dpad right || S
+		char c_rt;
+		char k_d;
+	};
+	union { // A button   || down arrow
+		char c_a;
+		char k_dn;
+	};
+	union { // B button   || right arrow
+		char c_b;
+		char k_rt;
+	};
+	union { // X button   || left arrow
+		char c_x;
+		char k_lt;
+	};
+	union { // Y button   || up arrow
+		char c_y;
+		char k_up;
+	};
+	unsigned char cfrm;  // Start  || A button || Enter  || down arrow
+	unsigned char paus;  // Select || Start    || Escape || Enter
+	unsigned char back;  // Select || B button || Escape || right arrow
 } ww_istate_t;
 
 typedef struct {
 	unsigned char color[3];
 	short *x;
 	short *y;
+	short miny;
+	short maxy;
 	float ratio;
 	void *s_parent; // pointer to sprite
 	int w_pad_x; // window's pad
@@ -125,7 +157,7 @@ extern ww_istate_t ipstate;
 
 ww_sprite_t * ww_new_sprite(ww_reference_t);
 ww_sprite_t * ww_clone_sprite(ww_sprite_t *);
-int ww_draw_raw_polygon(const Sint16 *, const Sint16 *, int, unsigned char[3]);
+int ww_draw_raw_polygon(const Sint16 *, const Sint16 *, int, short, short, unsigned char[3]);
 void ww_scale_polygon(ww_polygon_t * poly);
 int ww_draw_polygon(ww_polygon_t * poly);
 int ww_draw_frame(ww_frame_t * frame);

@@ -13,32 +13,32 @@
 ww_window_t window = NULL;
 
 ww_istate_t istate = {
-	.str  = 0,
-	.sel  = 0,
-	.up   = 0,
-	.dn   = 0,
-	.lt   = 0,
-	.rt   = 0,
-	.ba    = 0,
-	.bb    = 0,
-	.bx    = 0,
-	.by    = 0,
+	.c_str  = 0,
+	.c_sel  = 0,
+	.c_up   = 0,
+	.c_dn   = 0,
+	.c_lt   = 0,
+	.c_rt   = 0,
+	.c_a    = 0,
+	.c_b    = 0,
+	.c_x    = 0,
+	.c_y    = 0,
 	.cfrm = 0,
 	.paus = 0,
 	.back = 0
 };
 
 ww_istate_t ipstate = {
-	.str  = 0,
-	.sel  = 0,
-	.up   = 0,
-	.dn   = 0,
-	.lt   = 0,
-	.rt   = 0,
-	.ba    = 0,
-	.bb    = 0,
-	.bx    = 0,
-	.by    = 0,
+	.c_str  = 0,
+	.c_sel  = 0,
+	.c_up   = 0,
+	.c_dn   = 0,
+	.c_lt   = 0,
+	.c_rt   = 0,
+	.c_a    = 0,
+	.c_b    = 0,
+	.c_x    = 0,
+	.c_y    = 0,
 	.cfrm = 0,
 	.paus = 0,
 	.back = 0
@@ -408,79 +408,79 @@ void ww_key_event(SDL_Event *event){
 	if( event->type == SDL_KEYDOWN && event->key.repeat == 0){
 		switch(event->key.keysym.sym){
 			case SDLK_ESCAPE:
-				istate.sel = 1;
+				istate.c_sel = 1;
 				istate.paus = 1;
 				istate.back = 1;
 				break;
 			case SDLK_RETURN:
-				istate.str = 1;
+				istate.c_str = 1;
 				istate.cfrm = 1;
 				istate.paus = 1;
 				break;
 			case SDLK_UP:
-				istate.by = 1;
+				istate.c_y = 1;
 				break;
 			case SDLK_DOWN:
-				istate.ba = 1;
+				istate.c_a = 1;
 				istate.cfrm = 1;
 				break;
 			case SDLK_LEFT:
-				istate.bx = 1;
+				istate.c_x = 1;
 				break;
 			case SDLK_RIGHT:
-				istate.bb = 1;
+				istate.c_b = 1;
 				istate.back = 1;
 				break;
 			case SDLK_w:
-				istate.up = 1;
+				istate.c_up = 1;
 				break;
 			case SDLK_a:
-				istate.lt = 1;
+				istate.c_lt = 1;
 				break;
 			case SDLK_s:
-				istate.dn = 1;
+				istate.c_dn = 1;
 				break;
 			case SDLK_d:
-				istate.rt = 1;
+				istate.c_rt = 1;
 				break;
 		}
 	} else if ( event->type == SDL_KEYUP ) {
 		switch(event->key.keysym.sym){
 			case SDLK_ESCAPE:
-				istate.sel = 0;
+				istate.c_sel = 0;
 				istate.paus = 0;
 				istate.back = 0;
 				break;
 			case SDLK_RETURN:
-				istate.str = 0;
+				istate.c_str = 0;
 				istate.cfrm = 0;
 				istate.paus = 0;
 				break;
 			case SDLK_UP:
-				istate.by = 0;
+				istate.c_y = 0;
 				break;
 			case SDLK_DOWN:
-				istate.ba = 0;
+				istate.c_a = 0;
 				istate.cfrm = 0;
 				break;
 			case SDLK_LEFT:
-				istate.bx = 0;
+				istate.c_x = 0;
 				break;
 			case SDLK_RIGHT:
-				istate.bb = 0;
+				istate.c_b = 0;
 				istate.back = 0;
 				break;
 			case SDLK_w:
-				istate.up = 0;
+				istate.c_up = 0;
 				break;
 			case SDLK_a:
-				istate.lt = 0;
+				istate.c_lt = 0;
 				break;
 			case SDLK_s:
-				istate.dn = 0;
+				istate.c_dn = 0;
 				break;
 			case SDLK_d:
-				istate.rt = 0;
+				istate.c_rt = 0;
 				break;
 		}
 	}
@@ -488,79 +488,79 @@ void ww_key_event(SDL_Event *event){
 	if( event->type == SDL_CONTROLLERBUTTONDOWN){
 		switch(event->cbutton.button){
 			case SDL_CONTROLLER_BUTTON_BACK:
-				istate.sel = 1;
+				istate.c_sel = 1;
 				istate.paus = 1;
 				istate.back = 1;
 				break;
 			case SDL_CONTROLLER_BUTTON_START:
-				istate.str = 1;
+				istate.c_str = 1;
 				istate.cfrm = 1;
 				istate.paus = 1;
 				break;
 			case SDL_CONTROLLER_BUTTON_Y:
-				istate.by = 1;
+				istate.c_y = 1;
 				break;
 			case SDL_CONTROLLER_BUTTON_A:
-				istate.ba = 1;
+				istate.c_a = 1;
 				istate.cfrm = 1;
 				break;
 			case SDL_CONTROLLER_BUTTON_X:
-				istate.bx = 1;
+				istate.c_x = 1;
 				break;
 			case SDL_CONTROLLER_BUTTON_B:
-				istate.bb = 1;
+				istate.c_b = 1;
 				istate.back = 1;
 				break;
 			case SDL_CONTROLLER_BUTTON_DPAD_UP:
-				istate.up = 1;
+				istate.c_up = 1;
 				break;
 			case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-				istate.dn = 1;
+				istate.c_dn = 1;
 				break;
 			case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
-				istate.lt = 1;
+				istate.c_lt = 1;
 				break;
 			case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
-				istate.rt = 1;
+				istate.c_rt = 1;
 				break;
 		}
 	} else if( event->type == SDL_CONTROLLERBUTTONUP){
 		switch(event->cbutton.button){
 			case SDL_CONTROLLER_BUTTON_BACK:
-				istate.sel = 0;
+				istate.c_sel = 0;
 				istate.paus = 0;
 				istate.back = 0;
 				break;
 			case SDL_CONTROLLER_BUTTON_START:
-				istate.str = 0;
+				istate.c_str = 0;
 				istate.cfrm = 0;
 				istate.paus = 0;
 				break;
 			case SDL_CONTROLLER_BUTTON_Y:
-				istate.by = 0;
+				istate.c_y = 0;
 				break;
 			case SDL_CONTROLLER_BUTTON_A:
-				istate.ba = 0;
+				istate.c_a = 0;
 				istate.cfrm = 0;
 				break;
 			case SDL_CONTROLLER_BUTTON_X:
-				istate.bx = 0;
+				istate.c_x = 0;
 				break;
 			case SDL_CONTROLLER_BUTTON_B:
-				istate.bb = 0;
+				istate.c_b = 0;
 				istate.back = 0;
 				break;
 			case SDL_CONTROLLER_BUTTON_DPAD_UP:
-				istate.up = 0;
+				istate.c_up = 0;
 				break;
 			case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-				istate.dn = 0;
+				istate.c_dn = 0;
 				break;
 			case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
-				istate.lt = 0;
+				istate.c_lt = 0;
 				break;
 			case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
-				istate.rt = 0;
+				istate.c_rt = 0;
 				break;
 		}
 	}
@@ -591,19 +591,19 @@ int ww_window_update_events(){
 				break;
 		}
 	
-		if (old_istate.sel  == 0 && istate.sel  == 1){ ipstate.sel  = 1;  }
-		if (old_istate.str  == 0 && istate.str  == 1){ ipstate.str  = 1;  }
-		if (old_istate.up   == 0 && istate.up   == 1){ ipstate.up   = 1;  }
-		if (old_istate.lt   == 0 && istate.lt   == 1){ ipstate.lt   = 1;  }
-		if (old_istate.dn   == 0 && istate.dn   == 1){ ipstate.dn   = 1;  }
-		if (old_istate.rt   == 0 && istate.rt   == 1){ ipstate.rt   = 1;  }
-		if (old_istate.ba   == 0 && istate.ba   == 1){ ipstate.ba   = 1;  }
-		if (old_istate.bb   == 0 && istate.bb   == 1){ ipstate.bb   = 1;  }
-		if (old_istate.bx   == 0 && istate.bx   == 1){ ipstate.bx   = 1;  }
-		if (old_istate.by   == 0 && istate.by   == 1){ ipstate.by   = 1;  }
-		if (old_istate.cfrm == 0 && istate.cfrm == 1){ ipstate.cfrm = 1;  }
-		if (old_istate.paus == 0 && istate.paus == 1){ ipstate.paus = 1;  }
-		if (old_istate.back == 0 && istate.back == 1){ ipstate.back = 1;  }
+		if (old_istate.c_sel == 0 && istate.c_sel == 1){ ipstate.c_sel = 1;  }
+		if (old_istate.c_str == 0 && istate.c_str == 1){ ipstate.c_str = 1;  }
+		if (old_istate.c_up  == 0 && istate.c_up  == 1){ ipstate.c_up  = 1;  }
+		if (old_istate.c_lt  == 0 && istate.c_lt  == 1){ ipstate.c_lt  = 1;  }
+		if (old_istate.c_dn  == 0 && istate.c_dn  == 1){ ipstate.c_dn  = 1;  }
+		if (old_istate.c_rt  == 0 && istate.c_rt  == 1){ ipstate.c_rt  = 1;  }
+		if (old_istate.c_a   == 0 && istate.c_a   == 1){ ipstate.c_a   = 1;  }
+		if (old_istate.c_b   == 0 && istate.c_b   == 1){ ipstate.c_b   = 1;  }
+		if (old_istate.c_x   == 0 && istate.c_x   == 1){ ipstate.c_x   = 1;  }
+		if (old_istate.c_y   == 0 && istate.c_y   == 1){ ipstate.c_y   = 1;  }
+		if (old_istate.cfrm  == 0 && istate.cfrm  == 1){ ipstate.cfrm  = 1;  }
+		if (old_istate.paus  == 0 && istate.paus  == 1){ ipstate.paus  = 1;  }
+		if (old_istate.back  == 0 && istate.back  == 1){ ipstate.back  = 1;  }
 	}
 	
 	unsigned int new_ticks = SDL_GetTicks();
@@ -682,7 +682,7 @@ void ww_render_bars(){
 			window_p->ww_height * (window_p->ww_scale), 
 			window_p->ww_height * (window_p->ww_scale)
 		};
-		ww_draw_raw_polygon(bar_ax, bar_ay, 4, bar_grey);
+		ww_draw_raw_polygon(bar_ax, bar_ay, 4, 0, window_p->ww_height * (window_p->ww_scale), bar_grey);
 		// right
 		short bar_bx[4] = { 
 			(window_p->ww_width - window_p->ww_pad_x) * (window_p->ww_scale), 
@@ -696,7 +696,7 @@ void ww_render_bars(){
 			window_p->ww_height * (window_p->ww_scale), 
 			window_p->ww_height * (window_p->ww_scale)
 		};
-		ww_draw_raw_polygon(bar_bx, bar_by, 4, bar_grey);
+		ww_draw_raw_polygon(bar_bx, bar_by, 4, 0, window_p->ww_height * (window_p->ww_scale), bar_grey);
 		
 	} else {
 		// top
@@ -712,7 +712,7 @@ void ww_render_bars(){
 			window_p->ww_pad_y * (window_p->ww_scale), 
 			window_p->ww_pad_y * (window_p->ww_scale)
 		};
-		ww_draw_raw_polygon(bar_ax, bar_ay, 4, bar_grey);
+		ww_draw_raw_polygon(bar_ax, bar_ay, 4, 0, window_p->ww_pad_y * (window_p->ww_scale), bar_grey);
 		// bottom
 		short bar_bx[4] = { 
 			0, 
@@ -726,7 +726,13 @@ void ww_render_bars(){
 			window_p->ww_height * (window_p->ww_scale),
 			window_p->ww_height * (window_p->ww_scale)
 		};
-		ww_draw_raw_polygon(bar_bx, bar_by, 4, bar_grey);
+		
+		short max_y = bar_by[0];
+		for (int i = 1; i < 4; i++)
+			if (bar_by[i] > max_y)
+				max_y = bar_by[i];
+		
+		ww_draw_raw_polygon(bar_bx, bar_by, 4, 0, max_y, bar_grey);
 		
 	}
 	
@@ -809,7 +815,7 @@ ww_sprite_t * ww_new_sprite(ww_reference_t payload){
 	uint8_t * c = (uint8_t *)s + sizeof(ww_sprite_t);
 	
 	//~ printf("s: %p\n", (void *)s);
-	printf("s: %p sz: %x s+sz: %p &s[1]: %p c: %p\n", (void *)s, (unsigned int)sz, (uint8_t *)s + sz, (void *)&s[1], (void *)c);
+	//~ printf("s: %p sz: %x s+sz: %p &s[1]: %p c: %p\n", (void *)s, (unsigned int)sz, (uint8_t *)s + sz, (void *)&s[1], (void *)c);
 	
 	//~ printf("curr: %p targ: %p\n", (void *)c, (void *)&s->animations);
 	
@@ -826,8 +832,13 @@ ww_sprite_t * ww_new_sprite(ww_reference_t payload){
 		
 		//~ printf("pre-delay -- curr: %p targ: %p\n", (void *)c, (void *)&s->animations[a].frames);
 		s->animations[a].count = payload.frames[fstride];
+		
+		// copy in delay -- ensure at least 1
 		s->animations[a].delay = (void *)c;
-		memcpy(c, payload.delays[a], sizeof(int) * payload.frames[fstride]);
+		for(int i = 0; i < payload.frames[fstride]; i++){
+			s->animations[a].delay[i] = ( payload.delays[a][i] > 0 ? payload.delays[a][i] : 1 );
+		}
+		
 		c += sizeof(int) * payload.frames[fstride];
 		
 		//~ printf("pre-frame -- curr: %p targ: %p\n", (void *)c, (void *)&s->animations[a].frames);
@@ -847,9 +858,9 @@ ww_sprite_t * ww_new_sprite(ww_reference_t payload){
 				s->animations[a].frames[f].polys[p].count = payload.vertices[vstride];
 				s->animations[a].frames[f].polys[p].ratio = 1.0;
 				s->animations[a].frames[f].polys[p].s_parent = s;
-				s->animations[a].frames[f].polys[p].s_scale = 1.0;
+				//~ s->animations[a].frames[f].polys[p].s_scale = 1.0; // ensures rescale on first draw
 				s->animations[a].frames[f].polys[p].scale = 1.0;
-				memcpy(s->animations[a].frames[f].polys[p].color, payload.colors[pstride], sizeof(ww_rgba_t));
+				memcpy(s->animations[a].frames[f].polys[p].color, payload.colors[vstride], sizeof(ww_rgba_t));
 				
 				//~ printf("pre-x     -- curr: %p anim: %d  fram: %d poly: %d xory: x\n", c, a, f, p);
 				s->animations[a].frames[f].polys[p].x = (void *)c;
@@ -872,6 +883,8 @@ ww_sprite_t * ww_new_sprite(ww_reference_t payload){
 				memcpy(c, payload.arrays[astride], sizeof(short) * payload.vertices[vstride]);
 				c += sizeof(short) * payload.vertices[vstride];
 				
+				ww_scale_polygon(&s->animations[a].frames[f].polys[p]);
+				
 				vstride++;
 				astride++;
 				//~ printf("vs: %d as: %d\n", vstride, astride);
@@ -880,6 +893,18 @@ ww_sprite_t * ww_new_sprite(ww_reference_t payload){
 		}
 		fstride++;
 	}
+	
+	//~ for(int i = 0; i < s->count; i++){
+		//~ for(int j = 0; j < s->animations[i].count; j++){
+			//~ for(int k = 0; k < s->animations[i].frames[j].count; k++){
+				//~ for(int l = 0; l < s->animations[i].frames[j].polys[k].count; l++){
+					//~ if (s->animations[i].frames[j].polys[k].y[l] > s->maxy){
+						//~ s->maxy = s->animations[i].frames[j].polys[k].y[l];
+					//~ }
+				//~ }
+			//~ }
+		//~ }
+	//~ }
 	
 	//~ printf("curr: %p targ: %p\n", c, NULL);
 	
@@ -982,20 +1007,24 @@ ww_sprite_t * ww_clone_sprite(ww_sprite_t * insprite){
 	
 	ww_sprite_t * s = ww_new_sprite(clone_payload);
 	
+	s->pad_x = insprite->pad_x;
+	s->pad_y = insprite->pad_y;
+	s->paused = insprite->paused;
+	s->scale = insprite->scale;
+	
 	return s;
 	
 }
 
 //~ int *gfxPrimitivesPolyInts = NULL;
 
-int ww_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, unsigned char * color)
+int ww_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, short miny, short maxy, unsigned char * color)
 {
 	ww_window_s *window_p = (ww_window_s*) window;
 	
 	int result;
 	int i;
 	int y, xa, xb;
-	int miny, maxy;
 	int x1, y1;
 	int x2, y2;
 	int ind1, ind2;
@@ -1004,21 +1033,11 @@ int ww_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, unsigned ch
 	int *gfxPrimitivesPolyInts = (int *) malloc(sizeof(int) * n);
 	
 	//~ printf("color: %d %d %d\n", color[0], color[1], color[2]);
-	//~ printf("vx[0]: %d\n", vx[0]);
 	
 	if (vx == NULL || vy == NULL || n < 3) {
 		return -1;
 	}
 	
-	miny = vy[0];
-	maxy = vy[0];
-	for (i = 1; (i < n); i++) {
-		if (vy[i] < miny) {
-			miny = vy[i];
-		} else if (vy[i] > maxy) {
-			maxy = vy[i];
-		}
-	}
 	
 	result = 0;
 	for (y = miny; y <= maxy; y++) {
@@ -1093,10 +1112,33 @@ void ww_scale_polygon(ww_polygon_t * poly){
 		poly->s_scale = parent->scale;
 		poly->scale = window_p->ww_scale;
 		
+		poly->miny = 0;
+		poly->maxy = 0;
+		
+		int minx = 0;
+		int maxx = 0;
+		
 		for(int i = 0; i < poly->count; i++){
 			poly->scaled_x[i] = poly->scale * ((poly->x[i] * poly->s_scale + poly->s_pad_x) * poly->ratio + poly->w_pad_x);
 			poly->scaled_y[i] = poly->scale * ((poly->y[i] * poly->s_scale + poly->s_pad_y) * poly->ratio + poly->w_pad_y);
+			
+			if (poly->scaled_x[i] < minx) {
+				minx = poly->scaled_x[i];
+			} else if (poly->scaled_x[i] > maxx) {
+				maxx = poly->scaled_x[i];
+			}
+			
+			if (poly->scaled_y[i] < poly->miny) {
+				poly->miny = poly->scaled_y[i];
+			} else if (poly->scaled_y[i] > poly->maxy) {
+				poly->maxy = poly->scaled_y[i];
+			}
 		}
+		
+		if( (maxx - minx) > parent->width)
+			parent->width = (maxx - minx);
+		if( (poly->maxy - poly->miny) > parent->height)
+			parent->height = (poly->maxy - poly->miny);
 	
 	}
 	
@@ -1109,7 +1151,7 @@ int ww_draw_polygon(ww_polygon_t * poly){
 	ww_scale_polygon(poly);
 	//~ printf("dp_pos_poly: %d\n", poly->scaled_x[0]);
 	
-	return ww_draw_raw_polygon(poly->scaled_x, poly->scaled_y, poly->count, poly->color);
+	return ww_draw_raw_polygon(poly->scaled_x, poly->scaled_y, poly->count, poly->miny, poly->maxy, poly->color);
 }
 
 int ww_draw_frame(ww_frame_t * frame){
