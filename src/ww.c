@@ -606,28 +606,6 @@ int ww_window_update_events(){
 		if (old_istate.back  == 0 && istate.back  == 1){ ipstate.back  = 1;  }
 	}
 	
-	unsigned int new_ticks = SDL_GetTicks();
-	
-	// ms since last update
-	unsigned int passed_ms = (new_ticks - window_p->ticks);
-	
-	// frames since last update
-	window_p->frames = passed_ms / 16;
-	
-	// leftovers from last frame, plus new .67s, plus 
-	window_p->framediff += ((float)window_p->frames * .67) + (passed_ms % 16);
-	
-	// how many 16.67's have passed
-	while (window_p->framediff > 16.67){
-		window_p->framediff -= 16.67;
-		window_p->frames++;
-	}
-	
-	//~ printf("nt: %u\n\tleftover: %d\n\t\tpassed: %u\n\t\t\tframes: %d\n\t\t\t\tframediff: %f\n", 
-		//~ new_ticks, 0, passed_ms, window_p->frames, window_p->framediff);
-		
-	window_p->ticks = new_ticks;
-	
 	return 0;
 }
 
@@ -782,6 +760,25 @@ int ww_window_update_buffer() {
 		
 		SDL_SetRenderTarget(window_p->ww_sdl_renderer, window_p->ww_sdl_texture);
 	}
+	
+	unsigned int new_ticks = SDL_GetTicks();
+	
+	// ms since last update
+	unsigned int passed_ms = (new_ticks - window_p->ticks);
+	
+	// frames since last update
+	window_p->frames = (float)passed_ms / 16.67;
+	
+	// store unused ticks
+	window_p->framediff += (float)passed_ms - ( window_p->frames * 16.67 );
+	
+	// how many 16.67's have passed
+	while (window_p->framediff > 16.67){
+		window_p->framediff -= 16.67;
+		window_p->frames++;
+	}
+		
+	window_p->ticks = new_ticks;
 	
 	ww_clear_buffer();
 	
