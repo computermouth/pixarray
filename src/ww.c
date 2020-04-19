@@ -958,9 +958,9 @@ ww_sprite_t * ww_clone_sprite(ww_sprite_t * insprite){
 				vertices[c_stride] = insprite->animations[i].frames[j].polys[k].count;
 				c_stride++;
 				
-				arrays[a_stride] = insprite->animations[i].frames[j].polys[k].scaled_x;
+				arrays[a_stride] = insprite->animations[i].frames[j].polys[k].x;
 				a_stride++;
-				arrays[a_stride] = insprite->animations[i].frames[j].polys[k].scaled_y;
+				arrays[a_stride] = insprite->animations[i].frames[j].polys[k].y;
 				a_stride++;
 			}
 		}
