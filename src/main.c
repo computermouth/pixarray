@@ -14,6 +14,7 @@
 #include "sel.h"
 #include "start.h"
 #include "up.h"
+#include "vince.h"
 
 ww_sprite_t * ba         = NULL;
 ww_sprite_t * ba2        = NULL;
@@ -27,6 +28,7 @@ ww_sprite_t * right      = NULL;
 ww_sprite_t * sel        = NULL;
 ww_sprite_t * start      = NULL;
 ww_sprite_t * up         = NULL;
+ww_sprite_t * vince      = NULL;
 
 void inits(){
 	
@@ -44,6 +46,7 @@ void inits(){
 	sel        = ww_new_sprite(SEL       );
 	start      = ww_new_sprite(START     );
 	up         = ww_new_sprite(UP        );
+	vince      = ww_new_sprite(VINCE     );
 	
 }
 
@@ -55,6 +58,8 @@ int main( int argc, char * argv[] ) {
 	}
 		
 	inits();
+	
+	int draw_vince = 0;
 		
 	while(!ww_window_received_quit_event()) {
 		
@@ -113,6 +118,12 @@ int main( int argc, char * argv[] ) {
 		ww_draw_sprite(sel       );
 		ww_draw_sprite(start     );
 		ww_draw_sprite(up        );
+		
+		if(istate.c_sel && istate.c_lt && istate.c_rt)
+			draw_vince = 1;
+		
+		if(draw_vince)
+			ww_draw_sprite(vince);
 		
 		ww_window_update_buffer();
 		

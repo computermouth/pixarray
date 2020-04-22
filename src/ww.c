@@ -734,7 +734,19 @@ void ww_clear_buffer(){
 
 }
 
+//~ #include <sys/time.h>
+//~ struct timeval t0 = {.tv_usec = 0};
+//~ struct timeval t1 = {.tv_usec = 0};
+
 int ww_window_update_buffer() {
+	
+	//~ gettimeofday(&t1, 0);
+	
+	//~ if ( t0.tv_usec != 0 ){
+		//~ printf("frametime: %f\n", (t1.tv_sec - t0.tv_sec) * 1000.0f + (t1.tv_usec - t0.tv_usec) / 1000.0f);
+	//~ }
+	
+	//~ t0 = t1;
 	
 	if(!window) {
 		return -1;
