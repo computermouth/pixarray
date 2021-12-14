@@ -9,8 +9,9 @@ var (
 {{$GSpritename := toupper .Spritename}}
 
 #define {{$GSpritename}}_ANIMATION_COUNT {{len .Animations}}
-{{range .Animations}} {{$GAnimation := toupper .Animation}}
+{{range $i, $e := .Animations}} {{$GAnimation := toupper .Animation}}
 #define   {{$GSpritename}}_{{$GAnimation}}_FRAME_COUNT {{len .Frames}}
+#define   {{$GSpritename}}_{{$GAnimation}}_INDEX {{$i}}
 {{end}}
 
 #include "ww.h"
