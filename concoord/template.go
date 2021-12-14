@@ -6,6 +6,13 @@ var (
 #ifndef {{toupper .Spritename}}_SPRITE_H
 #define {{toupper .Spritename}}_SPRITE_H
 
+{{$GSpritename := toupper .Spritename}}
+
+#define {{$GSpritename}}_ANIMATION_COUNT {{len .Animations}}
+{{range .Animations}} {{$GAnimation := toupper .Animation}}
+#define   {{$GSpritename}}_{{$GAnimation}}_FRAME_COUNT {{len .Frames}}
+{{end}}
+
 #include "ww.h"
 
 extern ww_reference_t {{toupper .Spritename}};
