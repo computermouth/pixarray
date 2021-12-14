@@ -99,9 +99,9 @@ int ww_window_create(int argc, char * argv[], char * title, int width, int heigh
 	window_p->ww_default_width = width;
 	window_p->ww_default_height = height;
 	window_p->ww_ratio = 1.0;
-	window_p->ww_scale = SC_ONE;
+	window_p->ww_scale = SC_EIGHTH;
 	window_p->pf = SDL_PIXELFORMAT_RGB888;
-	window_p->acc = SDL_RENDERER_ACCELERATED;
+	window_p->acc = SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE;
 	window_p->vsync = SDL_RENDERER_PRESENTVSYNC;
 	window_p->ticks = 0;
 	window_p->framediff = 0.0;
@@ -907,8 +907,8 @@ ww_sprite_t * ww_new_sprite(ww_reference_t payload){
 		//~ for(int j = 0; j < s->animations[i].count; j++){
 			//~ for(int k = 0; k < s->animations[i].frames[j].count; k++){
 				//~ for(int l = 0; l < s->animations[i].frames[j].polys[k].count; l++){
-					//~ if (s->animations[i].frames[j].polys[k].y[l] > s->maxy){
-						//~ s->maxy = s->animations[i].frames[j].polys[k].y[l];
+					//~ if (s->animations[i].frames[j].polys[k].y[l] > s->scaled_maxy){
+						//~ s->scaled_maxy = s->animations[i].frames[j].polys[k].y[l];
 					//~ }
 				//~ }
 			//~ }
@@ -1027,7 +1027,7 @@ ww_sprite_t * ww_clone_sprite(ww_sprite_t * insprite){
 
 //~ int *gfxPrimitivesPolyInts = NULL;
 
-int ww_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, short miny, short maxy, unsigned char * color)
+int ww_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, short scaled_miny, short scaled_maxy, unsigned char * color)
 {
 	ww_window_s *window_p = (ww_window_s*) window;
 	
@@ -1049,7 +1049,7 @@ int ww_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, short miny,
 	
 	
 	result = 0;
-	for (y = miny; y <= maxy; y++) {
+	for (y = scaled_miny; y <= scaled_maxy; y++) {
 		ints = 0;
 		for (i = 0; (i < n); i++) {
 			if (!i) {
@@ -1072,7 +1072,7 @@ int ww_draw_raw_polygon(const Sint16 * vx, const Sint16 * vy, int n, short miny,
 			} else {
 				continue;
 			}
-			if ( ((y >= y1) && (y < y2)) || ((y == maxy) && (y > y1) && (y <= y2)) ) {
+			if ( ((y >= y1) && (y < y2)) || ((y == scaled_maxy) && (y > y1) && (y <= y2)) ) {
 				gfxPrimitivesPolyInts[ints++] = ((65536 * (y - y1)) / (y2 - y1)) * (x2 - x1) + (65536 * x1);
 			} 	    
 		}
@@ -1121,36 +1121,68 @@ void ww_scale_polygon(ww_polygon_t * poly){
 		poly->s_scale = parent->scale;
 		poly->scale = window_p->ww_scale;
 		
+		poly->scaled_miny = 0;
+		poly->scaled_maxy = 0;
+		
 		poly->miny = 0;
 		poly->maxy = 0;
+		poly->minx = 0;
+		poly->maxx = 0;
 		
-		int minx = 0;
-		int maxx = 0;
+		int scaled_minx = 0;
+		int scaled_maxx = 0;
 		
 		for(int i = 0; i < poly->count; i++){
 			poly->scaled_x[i] = poly->scale * ((poly->x[i] * poly->s_scale + poly->s_pad_x) * poly->ratio + poly->w_pad_x);
 			poly->scaled_y[i] = poly->scale * ((poly->y[i] * poly->s_scale + poly->s_pad_y) * poly->ratio + poly->w_pad_y);
 			
-			if (poly->scaled_x[i] < minx) {
-				minx = poly->scaled_x[i];
-			} else if (poly->scaled_x[i] > maxx) {
-				maxx = poly->scaled_x[i];
+			if (poly->scaled_x[i] < scaled_minx) {
+				scaled_minx = poly->scaled_x[i];
+			} else if (poly->scaled_x[i] > scaled_maxx) {
+				scaled_maxx = poly->scaled_x[i];
 			}
 			
-			if (poly->scaled_y[i] < poly->miny) {
-				poly->miny = poly->scaled_y[i];
-			} else if (poly->scaled_y[i] > poly->maxy) {
-				poly->maxy = poly->scaled_y[i];
+			if (poly->scaled_y[i] < poly->scaled_miny) {
+				poly->scaled_miny = poly->scaled_y[i];
+			} else if (poly->scaled_y[i] > poly->scaled_maxy) {
+				poly->scaled_maxy = poly->scaled_y[i];
+			}
+			
+			if (poly->x[i] < poly->minx) {
+				poly->minx = poly->x[i];
+			} else if (poly->x[i] > poly->maxx) {
+				poly->maxx = poly->x[i];
+			}
+			
+			if (poly->y[i] < poly->miny) {
+				poly->miny = poly->y[i];
+			} else if (poly->y[i] > poly->maxy) {
+				poly->maxy = poly->y[i];
 			}
 		}
 		
-		if( (maxx - minx) > parent->width)
-			parent->width = (maxx - minx);
+		if( (poly->maxx - poly->minx) > parent->width)
+			parent->width = (poly->maxx - poly->minx);
 		if( (poly->maxy - poly->miny) > parent->height)
 			parent->height = (poly->maxy - poly->miny);
 	
 	}
 	
+}
+
+void ww_scale_frame(ww_frame_t * frame){
+
+	for(int i = 0; i < frame->count; i++){
+		ww_scale_polygon(&frame->polys[i]);
+	}
+}
+
+void ww_scale_animation(ww_animation_t * anim){
+	ww_scale_frame(&anim->frames[anim->active_frame]);
+}
+
+void ww_scale_sprite(ww_sprite_t * sprite){
+	ww_scale_animation(&sprite->animations[sprite->active_animation]);
 }
 
 int ww_draw_polygon(ww_polygon_t * poly){
@@ -1160,7 +1192,7 @@ int ww_draw_polygon(ww_polygon_t * poly){
 	ww_scale_polygon(poly);
 	//~ printf("dp_pos_poly: %d\n", poly->scaled_x[0]);
 	
-	return ww_draw_raw_polygon(poly->scaled_x, poly->scaled_y, poly->count, poly->miny, poly->maxy, poly->color);
+	return ww_draw_raw_polygon(poly->scaled_x, poly->scaled_y, poly->count, poly->scaled_miny, poly->scaled_maxy, poly->color);
 }
 
 int ww_draw_frame(ww_frame_t * frame){

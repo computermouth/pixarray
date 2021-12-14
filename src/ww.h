@@ -101,6 +101,10 @@ typedef struct {
 	short *y;
 	short miny;
 	short maxy;
+	short minx;
+	short maxx;
+	short scaled_miny;
+	short scaled_maxy;
 	float ratio;
 	void *s_parent; // pointer to sprite
 	int w_pad_x; // window's pad
@@ -159,6 +163,9 @@ ww_sprite_t * ww_new_sprite(ww_reference_t);
 ww_sprite_t * ww_clone_sprite(ww_sprite_t *);
 int ww_draw_raw_polygon(const Sint16 *, const Sint16 *, int, short, short, unsigned char[3]);
 void ww_scale_polygon(ww_polygon_t * poly);
+void ww_scale_frame(ww_frame_t * frame);
+void ww_scale_animation(ww_animation_t * anim);
+void ww_scale_sprite(ww_sprite_t * sprite);
 int ww_draw_polygon(ww_polygon_t * poly);
 int ww_draw_frame(ww_frame_t * frame);
 int ww_draw_animation(ww_animation_t * anim, int paused);
